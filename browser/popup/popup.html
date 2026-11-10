@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DeskBuddy</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<header>
+  <div class="brand"><span class="logo" id="logo"></span><div><h1>DeskBuddy</h1><p id="stat">No sips logged today</p></div></div>
+  <button id="pause" class="ghost" type="button">Pause 1h</button>
+</header>
+
+<div class="preview" id="preview"></div>
+
+<section>
+  <h2>Your buddy</h2>
+  <div class="chars" id="chars"></div>
+  <label class="field">Your name
+    <input id="name" type="text" maxlength="24" autocomplete="off" placeholder="friend">
+  </label>
+  <label class="row"><span><b>Desk pet</b><small>Buddy strolls along the bottom of pages</small></span>
+    <input id="pet" class="switch" type="checkbox"></label>
+</section>
+
+<section>
+  <h2>Reminders</h2>
+  <div id="reminders"></div>
+</section>
+
+<section class="pro">
+  <div class="pro-head"><span class="badge">PRO</span><h2>Coming soon</h2></div>
+  <ul>
+    <li><b>Your photo as your buddy</b><small>Upload a picture and get a character that looks like you</small></li>
+    <li><b>Trending characters</b><small>New buddies added regularly</small></li>
+    <li><b>More on the way</b><small>Extra animations and reminder styles</small></li>
+  </ul>
+  <button id="interest" class="cta" type="button">I'm interested</button>
+  <form id="waitlist" hidden>
+    <input id="email" type="email" required placeholder="you@example.com" autocomplete="email">
+    <button class="cta" type="submit">Join waitlist</button>
+  </form>
+  <p id="waitmsg" class="note" hidden></p>
+  <p class="note">No payment needed now. Everything above this box is free.</p>
+</section>
+
+<script src="../buddy-core.js"></script>
+<script src="../defaults.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
