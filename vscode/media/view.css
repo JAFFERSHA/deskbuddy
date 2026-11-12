@@ -1,5 +1,5 @@
-html,body{height:100%}
-body{margin:0;padding:0;position:relative;min-height:230px;color:var(--vscode-foreground);font-family:var(--vscode-font-family);font-size:var(--vscode-font-size);overflow:hidden}
+html{height:100%}
+body{margin:0;padding:0;position:relative;height:100vh;min-height:90px;color:var(--vscode-foreground);font-family:var(--vscode-font-family);font-size:var(--vscode-font-size);overflow:hidden}
 #stage{position:absolute;inset:0 0 34px 0}
 #pro{position:absolute;left:8px;right:8px;bottom:6px;height:24px;border:1px solid var(--vscode-widget-border,transparent);border-radius:6px;background:var(--vscode-button-secondaryBackground);color:var(--vscode-button-secondaryForeground);font:inherit;font-size:11px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #pro:hover{background:var(--vscode-button-secondaryHoverBackground)}

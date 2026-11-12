@@ -59,6 +59,10 @@ async function fire(id, force) {
     view.webview.postMessage({ type: 'remind', reminder: p });
     return;
   }
+  notify(p, id);
+}
+
+async function notify(p, id) {
   const pick = await vscode.window.showInformationMessage('DeskBuddy: ' + p.text, p.actions[0].label, 'Remind me later');
   if (pick === p.actions[0].label) handle('done', id);
   else if (pick === 'Remind me later') handle('later', id);
@@ -100,6 +104,7 @@ class BuddyView {
     v.webview.onDidReceiveMessage(m => {
       if (m.type === 'ready') pushSettings();
       else if (m.type === 'action' && REMINDERS[m.id]) handle(m.action, m.id);
+      else if (m.type === 'fallback' && REMINDERS[m.id]) notify(payload(m.id), m.id);
       else if (m.type === 'pro') showPro();
     });
     v.onDidDispose(() => { view = undefined; });

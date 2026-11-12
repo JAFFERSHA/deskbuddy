@@ -151,7 +151,7 @@
     '@keyframes db-shadow{from{transform:scale(1)}to{transform:scale(.7)}}',
     '@keyframes db-tail{from{transform:rotate(-8deg)}to{transform:rotate(14deg)}}',
     '@keyframes db-blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}',
-    '.db-bubble{position:absolute;left:0;box-sizing:border-box;width:max-content;max-width:min(270px,calc(100vw - 16px));padding:12px 14px;border-radius:16px;background:#fff;color:#1c1e26;font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.06);pointer-events:auto;animation:db-pop .22s cubic-bezier(.2,1.4,.4,1)}',
+    '.db-bubble{position:absolute;left:0;box-sizing:border-box;width:max-content;max-width:min(270px,calc(100vw - 16px));max-height:calc(100vh - 12px);overflow:auto;padding:12px 14px;border-radius:16px;background:#fff;color:#1c1e26;font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.06);pointer-events:auto;animation:db-pop .22s cubic-bezier(.2,1.4,.4,1)}',
     '.db-bubble-text{font-weight:600;margin:0}',
     '.db-bubble-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}',
     '.db-btn{font:inherit;font-size:13px;font-weight:600;border-radius:999px;padding:7px 14px;border:1px solid #d5d8e0;background:#fff;color:#1c1e26;cursor:pointer}',
@@ -206,9 +206,18 @@
       actor.style.transform = 'translateX(' + Math.round(x) + 'px)';
       if (!bubble.hidden) {
         var bw = bubble.offsetWidth, W = width();
-        var left = Math.max(8, Math.min(W - bw - 8, x + size / 2 - bw / 2));
+        var avail = opts.fixed ? (doc.defaultView ? doc.defaultView.innerHeight : 600) : (stage.parentNode.clientHeight || 600);
+        var left, bottom;
+        if (H + 10 + bubble.offsetHeight <= avail) {
+          left = Math.max(8, Math.min(W - bw - 8, x + size / 2 - bw / 2));
+          bottom = H + 6;
+        } else {
+          // Not enough room above the character (short panel): put the bubble beside it.
+          left = x + size + 4 + bw <= W - 4 ? x + size + 4 : Math.max(4, x - bw - 4);
+          bottom = 6;
+        }
         bubble.style.left = Math.round(left) + 'px';
-        bubble.style.bottom = (H + 6) + 'px';
+        bubble.style.bottom = bottom + 'px';
       }
     }
     function setAnim(name) {
