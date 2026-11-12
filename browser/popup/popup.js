@@ -42,6 +42,23 @@
     DeskBuddy.render($('logo'), settings.character);
   }
 
+  function renderCharms() {
+    const box = $('charms');
+    box.textContent = '';
+    ['none'].concat(Object.keys(DeskBuddy.CHARMS)).forEach(id => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'char';
+      if (id === 'none') { const x = document.createElement('span'); x.className = 'none'; x.textContent = '\u2715'; b.appendChild(x); }
+      else DeskBuddy.renderCharm(b, id);
+      const label = document.createElement('span');
+      label.textContent = id === 'none' ? 'None' : DeskBuddy.CHARMS[id].name;
+      b.appendChild(label);
+      b.setAttribute('aria-pressed', String(settings.charm === id));
+      b.addEventListener('click', () => { settings.charm = id; save(); renderCharms(); });
+      box.appendChild(b);
+    });
+  }
+
   function renderReminders() {
     const box = $('reminders');
     box.textContent = '';
@@ -104,7 +121,7 @@
     stage.setPet(true);
     $('name').value = settings.name === 'friend' ? '' : settings.name;
     $('pet').checked = settings.pet;
-    renderChars(); renderReminders(); renderPause(); renderStat();
+    renderChars(); renderCharms(); renderReminders(); renderPause(); renderStat();
 
     $('name').addEventListener('change', () => { settings.name = $('name').value.trim() || 'friend'; save(); });
     $('pet').addEventListener('change', () => { settings.pet = $('pet').checked; save(); });

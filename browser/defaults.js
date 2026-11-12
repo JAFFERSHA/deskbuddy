@@ -19,6 +19,7 @@
     name: 'friend',
     character: 'mika',
     pet: true,
+    charm: 'none',
     snooze: 10,
     pausedUntil: 0,
     reminders: {}
@@ -30,7 +31,7 @@
   function merge(saved) {
     var s = JSON.parse(JSON.stringify(DEFAULTS));
     saved = saved || {};
-    ['name', 'character', 'pet', 'snooze', 'pausedUntil'].forEach(function (k) {
+    ['name', 'character', 'pet', 'charm', 'snooze', 'pausedUntil'].forEach(function (k) {
       if (saved[k] !== undefined) s[k] = saved[k];
     });
     Object.keys(REMINDERS).forEach(function (k) {
@@ -41,6 +42,7 @@
         if (typeof r.text === 'string' && r.text.trim()) s.reminders[k].text = r.text.slice(0, 160);
       }
     });
+    if (root.DeskBuddy && s.charm !== 'none' && !root.DeskBuddy.CHARMS[s.charm]) s.charm = 'none';
     if (!root.DeskBuddy || !root.DeskBuddy.CHARACTERS[s.character] || root.DeskBuddy.CHARACTERS[s.character].pro) {
       if (root.DeskBuddy) s.character = 'mika';
     }

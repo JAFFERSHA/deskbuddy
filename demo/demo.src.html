@@ -8,7 +8,7 @@
 :root{--bg:#14161d;--card:#1d2029;--line:#2c303c;--text:#eef0f5;--mute:#9aa1b2;--accent:#2f6bff;--gold:#f2b632}
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;padding:20px 16px 240px}
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;padding:150px 16px 240px}
 main{max-width:520px;margin:0 auto}
 h1{font-size:24px;margin:0 0 4px}
 .sub{color:var(--mute);margin:0 0 18px}
@@ -21,6 +21,7 @@ section{padding:14px;background:var(--card);border:1px solid var(--line);border-
 .char.locked svg{filter:grayscale(.6) brightness(.75)}
 .lock,.badge{font-size:10px;font-weight:800;background:var(--gold);color:#221a00;border-radius:6px;padding:1px 5px}
 .lock{position:absolute;top:4px;right:4px}
+.charms{grid-template-columns:repeat(3,1fr);margin-bottom:8px}.charms .char svg{width:auto;height:58px}.charms .none{display:grid;place-items:center;height:58px;font-size:22px;color:var(--mute)}
 .btns{display:flex;flex-wrap:wrap;gap:8px}
 .btns button{font:inherit;font-weight:600;color:var(--text);background:#252936;border:1px solid var(--line);border-radius:999px;padding:9px 14px;cursor:pointer}
 .btns button:hover{background:#30364a}
@@ -54,6 +55,12 @@ small{display:block;color:var(--mute);font-size:13px}
     <div class="chars" id="chars"></div>
   </section>
 
+  <section>
+    <h2>Hanging charm</h2>
+    <div class="chars charms" id="charms"></div>
+    <small>Hangs from the top of the page. Tap it to make it swing.</small>
+  </section>
+
   <section class="pro">
     <h2><span class="badge">PRO</span> Coming soon</h2>
     <ul>
@@ -85,6 +92,7 @@ small{display:block;color:var(--mute);font-size:13px}
     var b = document.createElement('button');
     b.type = 'button'; b.textContent = r.label;
     b.addEventListener('click', function () {
+      if (charm) charm.kick(2.4);
       stage.remind({ id: r.id, kind: r.id, text: r.text, cheer: r.cheer, actions: [{ id: 'done', label: r.done, primary: true }, { id: 'later', label: 'Remind me later' }] });
     });
     document.getElementById('btns').appendChild(b);
@@ -111,6 +119,25 @@ small{display:block;color:var(--mute);font-size:13px}
     });
   }
   renderChars();
+
+  var charm = null, charmId = 'evileye';
+  function applyCharm() {
+    if (charm) { charm.destroy(); charm = null; }
+    if (charmId !== 'none') charm = DeskBuddy.createCharm({ mount: document.body, fixed: true, charm: charmId, size: 58, length: 70, left: '80%' });
+    var box = document.getElementById('charms');
+    box.textContent = '';
+    ['none'].concat(Object.keys(DeskBuddy.CHARMS)).forEach(function (id) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'char';
+      if (id === 'none') { var x = document.createElement('span'); x.className = 'none'; x.textContent = '\u2715'; b.appendChild(x); }
+      else DeskBuddy.renderCharm(b, id);
+      b.appendChild(document.createTextNode(id === 'none' ? 'None' : DeskBuddy.CHARMS[id].name));
+      b.setAttribute('aria-pressed', String(id === charmId));
+      b.addEventListener('click', function () { charmId = id; applyCharm(); });
+      box.appendChild(b);
+    });
+  }
+  applyCharm();
   document.getElementById('interest').addEventListener('click', function () {
     document.getElementById('note').textContent = 'Thanks! In the real extension your interest would now be saved.';
   });

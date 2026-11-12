@@ -2,7 +2,7 @@
   "name": "deskbuddy",
   "displayName": "DeskBuddy: Animated Reminder Buddy",
   "description": "A friendly animated character in your sidebar that reminds you to drink water, take breaks and stretch while you code.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "publisher": "jaffersha",
   "license": "MIT",
   "icon": "icon.png",
@@ -21,6 +21,7 @@
     "commands": [
       { "command": "deskbuddy.remindNow", "title": "DeskBuddy: Try a Reminder Now" },
       { "command": "deskbuddy.chooseCharacter", "title": "DeskBuddy: Choose Character" },
+      { "command": "deskbuddy.chooseCharm", "title": "DeskBuddy: Choose Hanging Charm" },
       { "command": "deskbuddy.togglePause", "title": "DeskBuddy: Pause or Resume Reminders (1 hour)" },
       { "command": "deskbuddy.showPro", "title": "DeskBuddy: Preview Pro (Coming Soon)" }
     ],
@@ -30,6 +31,7 @@
         "deskbuddy.name": { "type": "string", "default": "friend", "description": "What your buddy calls you." },
         "deskbuddy.character": { "type": "string", "enum": ["mika", "arjun", "zoe"], "default": "mika", "description": "Which free character to show." },
         "deskbuddy.pet": { "type": "boolean", "default": true, "description": "Let the buddy stroll around the DeskBuddy view." },
+        "deskbuddy.charm": { "type": "string", "enum": ["none", "evileye", "lemon", "mask", "hamsa", "webby"], "enumDescriptions": ["No charm", "Evil eye", "Lemon and chilli", "Drishti mask", "Hamsa hand", "Webby the spider"], "default": "none", "description": "A good-luck charm that hangs from the top of the DeskBuddy view and swings when you touch it." },
         "deskbuddy.snoozeMinutes": { "type": "number", "default": 10, "minimum": 1, "description": "Minutes to wait after 'Remind me later'." },
         "deskbuddy.water.enabled": { "type": "boolean", "default": true, "description": "Water reminder." },
         "deskbuddy.water.minutes": { "type": "number", "default": 45, "minimum": 1, "description": "Minutes between water reminders." },

@@ -4,7 +4,7 @@
   style.textContent = DeskBuddy.CSS;
   document.head.appendChild(style);
   const mount = document.getElementById('stage');
-  let stage = null, settings = { character: 'mika', pet: true }, builtFor = 0;
+  let stage = null, charm = null, charmKey = '', settings = { character: 'mika', pet: true, charm: 'none' }, builtFor = 0;
 
   // The view can be any height, so the character is sized to fit it.
   function fitSize() {
@@ -23,13 +23,25 @@
     });
     stage.setPet(settings.pet);
   }
-  build();
+  // The charm needs some height to hang in; it is skipped in very short panels.
+  function buildCharm() {
+    const h = mount.clientHeight || 0;
+    const want = settings.charm !== 'none' && h >= 150 ? settings.charm : 'none';
+    const size = Math.round(Math.max(30, Math.min(52, h * 0.2)));
+    const key = want + ':' + size;
+    if (key === charmKey) return;
+    charmKey = key;
+    if (charm) { charm.destroy(); charm = null; }
+    if (want !== 'none') charm = DeskBuddy.createCharm({ mount, charm: want, size, length: Math.round(size * 0.7), left: '78%' });
+  }
+  build(); buildCharm();
   let t;
-  window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(build, 150); });
+  window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { build(); buildCharm(); }, 150); });
   window.addEventListener('message', e => {
     const m = e.data;
-    if (m.type === 'settings') { settings = { character: m.character, pet: m.pet }; stage.setCharacter(m.character); stage.setPet(m.pet); }
+    if (m.type === 'settings') { settings = { character: m.character, pet: m.pet, charm: m.charm || 'none' }; stage.setCharacter(m.character); stage.setPet(m.pet); buildCharm(); }
     if (m.type === 'remind') {
+      if (charm) charm.kick(2.4);
       if (mount.clientHeight >= 210) { stage.remind(m.reminder); return; }
       // Panel too short for the bubble and buttons: wave here, and let VS Code show the question.
       vscode.postMessage({ type: 'fallback', id: m.reminder.id });

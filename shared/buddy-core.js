@@ -100,6 +100,139 @@
     return s;
   }
 
+
+  /* ---- Hanging charms: original drawings of traditional good-luck motifs ---- */
+  var CHARMS = {
+    evileye: { name: 'Evil eye', string: '#b08d3c', ratio: 118 / 100 },
+    lemon:   { name: 'Lemon & chilli', string: '#b08d3c', ratio: 150 / 100 },
+    mask:    { name: 'Drishti mask', string: '#b08d3c', ratio: 132 / 100 },
+    hamsa:   { name: 'Hamsa hand', string: '#b08d3c', ratio: 124 / 100 },
+    webby:   { name: 'Webby', string: '#c9ccd6', ratio: 86 / 100 }
+  };
+
+  function charmSvg(id) {
+    var o = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 ';
+    if (id === 'lemon') {
+      var ch = [['M50 60 Q30 66 16 84'], ['M50 64 Q70 70 84 88'], ['M50 70 Q32 80 22 104'], ['M50 74 Q68 84 78 108'], ['M50 82 Q40 100 34 126'], ['M50 86 Q60 104 66 130'], ['M50 94 Q50 118 50 144']];
+      o += '150" role="img" aria-label="Lemon and chilli charm"><path d="M50 0 V62" stroke="#b08d3c" stroke-width="1.5"/>';
+      o += '<circle cx="42" cy="12" r="9" fill="#2b2b2e"/><circle cx="39" cy="9" r="2.5" fill="#5a5a60"/>';
+      ch.forEach(function (c) { o += '<path d="' + c[0] + '" stroke="#2f7d2b" stroke-width="7.5" fill="none" stroke-linecap="round"/><path d="' + c[0] + '" stroke="#49ad41" stroke-width="4" fill="none" stroke-linecap="round"/>'; });
+      o += '<ellipse cx="54" cy="38" rx="27" ry="25" fill="#f5cf1c"/><ellipse cx="54" cy="38" rx="27" ry="25" fill="none" stroke="#dcae0c" stroke-width="2"/>';
+      o += '<ellipse cx="45" cy="28" rx="9" ry="6" fill="#fff" opacity=".4"/><circle cx="79" cy="44" r="3" fill="#dcae0c"/>';
+    } else if (id === 'mask') {
+      o += '132" role="img" aria-label="Drishti mask charm">';
+      o += '<circle cx="50" cy="5" r="4" fill="#f2b632"/><ellipse cx="50" cy="15" rx="7" ry="6.5" fill="#d8342b"/><path d="M43.5 15h13" stroke="#f2b632" stroke-width="1.5"/><circle cx="50" cy="25" r="4" fill="#f2b632"/>';
+      o += '<path d="M24 60 Q5 48 11 26 Q20 41 34 47 Z" fill="#f4ead2"/><path d="M76 60 Q95 48 89 26 Q80 41 66 47 Z" fill="#f4ead2"/>';
+      o += '<circle cx="15" cy="84" r="5.5" fill="#c32820"/><circle cx="85" cy="84" r="5.5" fill="#c32820"/><circle cx="14" cy="93" r="3.6" fill="#f2b632"/><circle cx="86" cy="93" r="3.6" fill="#f2b632"/>';
+      o += '<ellipse cx="50" cy="82" rx="34" ry="36" fill="#d62f26"/>';
+      [[26, 54], [35, 47], [45, 43], [55, 43], [65, 47], [74, 54], [50, 51], [40, 53], [60, 53]].forEach(function (c) { o += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="9" fill="#1b1b1f"/>'; });
+      o += '<path d="M18 68 Q50 53 82 68 L81 75 Q50 61 19 75 Z" fill="#f2b632"/>';
+      o += '<path d="M42 72h16M43 76.5h14" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="50" cy="74.2" r="2.3" fill="#8c1410"/>';
+      o += '<path d="M23 84 Q34 77 45 86" stroke="#1b1b1f" stroke-width="5.5" fill="none" stroke-linecap="round"/><path d="M77 84 Q66 77 55 86" stroke="#1b1b1f" stroke-width="5.5" fill="none" stroke-linecap="round"/>';
+      o += '<circle cx="35" cy="94" r="9" fill="#fff"/><circle cx="35" cy="94" r="5" fill="#7a1d10"/><circle cx="35" cy="94" r="2.4" fill="#111"/><circle cx="65" cy="94" r="9" fill="#fff"/><circle cx="65" cy="94" r="5" fill="#7a1d10"/><circle cx="65" cy="94" r="2.4" fill="#111"/>';
+      o += '<path d="M46 101 Q50 106 54 101" stroke="#8c1410" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+      o += '<path d="M38 110 Q50 127 62 110 Z" fill="#5b0f0c"/><path d="M45 113 Q50 131 55 113 Z" fill="#ff6b6b"/>';
+      o += '<path d="M38.5 109 l3.5 10 l3.5 -10 Z" fill="#fff"/><path d="M54.5 109 l3.5 10 l3.5 -10 Z" fill="#fff"/>';
+      o += '<path d="M50 105 Q38 100 25 109 Q38 113 50 109 Q62 113 75 109 Q62 100 50 105 Z" fill="#1b1b1f"/>';
+    } else if (id === 'hamsa') {
+      o += '124" role="img" aria-label="Hamsa hand charm"><circle cx="50" cy="5" r="4" fill="#f2b632"/>';
+      o += '<path d="M27 38 Q3 42 7 66 Q10 76 19 71 Q16 56 31 54 Z" fill="#2c3193"/><path d="M73 38 Q97 42 93 66 Q90 76 81 71 Q84 56 69 54 Z" fill="#2c3193"/>';
+      o += '<rect x="24" y="9" width="52" height="58" rx="22" fill="#2c3193"/><rect x="25" y="48" width="15" height="58" rx="7.5" fill="#2c3193"/><rect x="60" y="48" width="15" height="58" rx="7.5" fill="#2c3193"/><rect x="42" y="48" width="16" height="70" rx="8" fill="#2c3193"/>';
+      o += '<path d="M30 30 Q50 12 70 30" stroke="#f29a2e" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+      o += '<ellipse cx="50" cy="42" rx="17" ry="10.5" fill="#fff"/><circle cx="50" cy="42" r="7.5" fill="#4fc3f0"/><circle cx="50" cy="42" r="3.4" fill="#10131c"/>';
+      [[32.5, 76], [32.5, 88], [32.5, 99], [67.5, 76], [67.5, 88], [67.5, 99], [50, 76], [50, 89], [50, 102], [50, 111]].forEach(function (c) { o += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="2.4" fill="#f29a2e"/>'; });
+      o += '<circle cx="13" cy="64" r="2.2" fill="#f29a2e"/><circle cx="87" cy="64" r="2.2" fill="#f29a2e"/>';
+    } else if (id === 'webby') {
+      o += '86" role="img" aria-label="Webby the spider">';
+      [['M32 44 Q14 34 8 46'], ['M30 50 Q10 48 6 62'], ['M32 56 Q14 62 12 76'], ['M37 62 Q25 72 27 83'], ['M68 44 Q86 34 92 46'], ['M70 50 Q90 48 94 62'], ['M68 56 Q86 62 88 76'], ['M63 62 Q75 72 73 83']].forEach(function (c) { o += '<path d="' + c[0] + '" stroke="#3a2a66" stroke-width="4.5" fill="none" stroke-linecap="round"/>'; });
+      o += '<ellipse cx="50" cy="50" rx="25" ry="23" fill="#6a49b8"/><ellipse cx="50" cy="60" rx="13" ry="8" fill="#8466cf"/>';
+      o += '<circle cx="40.5" cy="45" r="8.5" fill="#fff"/><circle cx="59.5" cy="45" r="8.5" fill="#fff"/><circle cx="42" cy="46.5" r="3.8" fill="#16181f"/><circle cx="58" cy="46.5" r="3.8" fill="#16181f"/><circle cx="43.2" cy="45" r="1.2" fill="#fff"/><circle cx="59.2" cy="45" r="1.2" fill="#fff"/>';
+      o += '<path d="M44 58 Q50 63 56 58" stroke="#16181f" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="33" cy="55" r="3" fill="#ff8fb0" opacity=".6"/><circle cx="67" cy="55" r="3" fill="#ff8fb0" opacity=".6"/>';
+    } else {
+      o += '118" role="img" aria-label="Evil eye charm">';
+      o += '<circle cx="50" cy="5" r="4" fill="#fff" stroke="#d3d6e0"/><circle cx="50" cy="16" r="8" fill="#1740d6"/><circle cx="50" cy="16" r="4.8" fill="#fff"/><circle cx="50" cy="16" r="2.8" fill="#59c8f2"/><circle cx="50" cy="16" r="1.3" fill="#111"/><circle cx="50" cy="28" r="3.6" fill="#fff" stroke="#d3d6e0"/>';
+      o += '<circle cx="50" cy="74" r="42" fill="#1436cc"/><circle cx="50" cy="74" r="40.5" fill="none" stroke="#0b1f85" stroke-width="3"/>';
+      o += '<path d="M17 60 A36 36 0 0 1 56 38" stroke="#5b80ff" stroke-width="5" fill="none" stroke-linecap="round" opacity=".75"/>';
+      o += '<circle cx="50" cy="76" r="25" fill="#fff"/><circle cx="50" cy="77" r="15" fill="#4fc3f0"/><circle cx="50" cy="77" r="7.5" fill="#10131c"/><circle cx="46" cy="73" r="2.3" fill="#fff" opacity=".85"/>';
+    }
+    return o + '</svg>';
+  }
+
+  function setMarkup(el, markup) {
+    var doc = el.ownerDocument;
+    var parsed = new doc.defaultView.DOMParser().parseFromString(markup, 'image/svg+xml');
+    var node = doc.importNode(parsed.documentElement, true);
+    var old = el.querySelector('svg');
+    if (old) el.replaceChild(node, old); else el.insertBefore(node, el.firstChild);
+    return node;
+  }
+
+  /* A charm hanging from the top edge on a string. It swings like a pendulum and reacts to the pointer.
+     opts: mount, fixed, charm (id), size (px), length (px), left (css), closable, onHide */
+  function createCharm(opts) {
+    var doc = (opts.mount.ownerDocument || document), win = doc.defaultView;
+    var size = opts.size || 64, length = opts.length === undefined ? 90 : opts.length;
+    var top = doc.createElement('div');
+    top.className = 'db-top ' + (opts.fixed ? 'db-fixed' : 'db-abs');
+    var arm = doc.createElement('div');
+    arm.className = 'db-charm';
+    arm.style.width = size + 'px';
+    arm.style.left = opts.left || '82%';
+    arm.style.marginLeft = (-size / 2) + 'px';
+    var string = doc.createElement('div');
+    string.className = 'db-string';
+    string.style.height = length + 'px';
+    var body = doc.createElement('div');
+    body.className = 'db-charm-body';
+    arm.appendChild(string); arm.appendChild(body);
+    if (opts.closable) {
+      var close = doc.createElement('button');
+      close.className = 'db-close'; close.type = 'button';
+      close.setAttribute('aria-label', 'Hide charm on this page');
+      close.textContent = '×';
+      close.addEventListener('click', function (e) { e.stopPropagation(); if (opts.onHide) opts.onHide(); });
+      body.appendChild(close);
+    }
+    top.appendChild(arm);
+    opts.mount.appendChild(top);
+
+    var calm = win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var theta = calm ? 0 : 0.55, omega = 0, running = false, dead = false, last = null, lastX = null;
+    var K = 26, DAMP = 0.85;
+    function draw() { arm.style.transform = 'rotate(' + (theta * 57.2958).toFixed(2) + 'deg)'; }
+    function step(now) {
+      if (dead) return;
+      if (last === null) last = now;
+      var dt = Math.min(0.033, (now - last) / 1000); last = now;
+      omega += (-K * Math.sin(theta) - DAMP * omega) * dt;
+      theta += omega * dt;
+      if (theta > 1.2) { theta = 1.2; omega *= -0.4; } else if (theta < -1.2) { theta = -1.2; omega *= -0.4; }
+      draw();
+      if (Math.abs(theta) < 0.003 && Math.abs(omega) < 0.01) { theta = 0; omega = 0; draw(); running = false; last = null; return; }
+      win.requestAnimationFrame(step);
+    }
+    function start() { if (!running && !dead) { running = true; last = null; win.requestAnimationFrame(step); } }
+    function kick(v) { if (calm) return; omega += v; start(); }
+    function setCharm(id) {
+      if (!CHARMS[id]) id = 'evileye';
+      setMarkup(body, charmSvg(id));
+      string.style.background = CHARMS[id].string;
+    }
+    setCharm(opts.charm);
+    draw(); start();
+    body.addEventListener('pointermove', function (e) {
+      if (lastX !== null) { var dx = e.clientX - lastX; if (Math.abs(dx) > 1) kick(Math.max(-0.5, Math.min(0.5, -dx * 0.04))); }
+      lastX = e.clientX;
+    });
+    body.addEventListener('pointerleave', function () { lastX = null; });
+    body.addEventListener('click', function () { kick((Math.random() < 0.5 ? -1 : 1) * 3.2); });
+    var breeze = win.setInterval(function () { if (!running && !doc.hidden) kick((Math.random() < 0.5 ? -1 : 1) * 0.6); }, 9000);
+    return {
+      el: top, setCharm: setCharm, kick: kick,
+      destroy: function () { dead = true; win.clearInterval(breeze); top.remove(); }
+    };
+  }
+
   /* Builds the character as real SVG nodes and puts it in el. */
   function render(el, id) {
     var doc = el.ownerDocument;
@@ -120,6 +253,13 @@
     '.db-sprite.db-flip{transform:scaleX(-1)}',
     '.db-close{position:absolute;top:-4px;right:-4px;width:22px;height:22px;border-radius:50%;border:0;background:#22252e;color:#fff;font-size:14px;line-height:22px;padding:0;cursor:pointer;opacity:0;transition:opacity .15s}',
     '.db-actor:hover .db-close,.db-close:focus-visible{opacity:.9}',
+    '.db-top{left:0;right:0;top:0;height:0;pointer-events:none}',
+    '.db-top.db-fixed{position:fixed;z-index:2147483645}.db-top.db-abs{position:absolute}',
+    '.db-charm{position:absolute;top:0;transform-origin:50% 0;will-change:transform;pointer-events:none}',
+    '.db-string{width:2px;margin:0 auto;border-radius:1px}',
+    '.db-charm-body{position:relative;margin-top:-3px;pointer-events:auto;cursor:pointer;filter:drop-shadow(0 6px 7px rgba(0,0,0,.28));-webkit-tap-highlight-color:transparent}',
+    '.db-charm-body svg{display:block;width:100%;height:auto;overflow:visible}',
+    '.db-charm-body:hover .db-close{opacity:.9}.db-charm-body .db-close{top:-8px;right:-12px}',
     '.db-leg-l{transform-origin:51.5px 128px}.db-leg-r{transform-origin:68.5px 128px}',
     '.db-arm-l{transform-origin:33px 87px}.db-arm-r{transform-origin:87px 87px}',
     '.db-head{transform-origin:60px 74px}.db-all{transform-origin:60px 184px}',
@@ -361,5 +501,5 @@
     return api;
   }
 
-  root.DeskBuddy = { CHARACTERS: CHARACTERS, svg: svg, render: render, CSS: CSS, createStage: createStage };
+  root.DeskBuddy = { CHARACTERS: CHARACTERS, CHARMS: CHARMS, svg: svg, charmSvg: charmSvg, render: render, renderCharm: function (el, id) { return setMarkup(el, charmSvg(id)); }, CSS: CSS, createStage: createStage, createCharm: createCharm };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -7,6 +7,7 @@ A friendly animated character that walks onto your screen and reminds you to dri
 - 3 original 2D characters (Mika, Arjun, Zoe) that walk, wave, drink and cheer
 - Water, break, stretch, eye rest and one custom reminder, each with its own interval
 - "Yes" / "Remind me later" (snooze), pause for 1 hour, daily water count
+- Hanging charms (evil eye, lemon and chilli, drishti mask, hamsa hand, Webby the spider) that dangle from the top of the page and swing when touched
 - Desk pet mode: the buddy strolls along the bottom of the page or the VS Code view
 - Pro preview: locked characters and a "your photo as a buddy" teaser with an interest/waitlist form. No payments.
 

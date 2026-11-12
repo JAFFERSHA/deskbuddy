@@ -79,7 +79,7 @@ function updateStatus() {
 function pushSettings() {
   if (!view) return;
   const ch = cfg().get('character');
-  view.webview.postMessage({ type: 'settings', character: FREE.includes(ch) ? ch : 'mika', pet: !!cfg().get('pet') });
+  view.webview.postMessage({ type: 'settings', character: FREE.includes(ch) ? ch : 'mika', pet: !!cfg().get('pet'), charm: cfg().get('charm') || 'none' });
 }
 
 function page(webview, body, script, data) {
@@ -164,6 +164,11 @@ function activate(context) {
       if (!pick) return;
       if (pick.pro) return showPro();
       await cfg().update('character', pick.id, vscode.ConfigurationTarget.Global);
+    }),
+    vscode.commands.registerCommand('deskbuddy.chooseCharm', async () => {
+      const items = [['none', 'None'], ['evileye', 'Evil eye'], ['lemon', 'Lemon & chilli'], ['mask', 'Drishti mask'], ['hamsa', 'Hamsa hand'], ['webby', 'Webby the spider']].map(([id, label]) => ({ label, id }));
+      const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Choose a hanging charm for the DeskBuddy view' });
+      if (pick) await cfg().update('charm', pick.id, vscode.ConfigurationTarget.Global);
     }),
     vscode.commands.registerCommand('deskbuddy.togglePause', () => {
       pausedUntil = pausedUntil > Date.now() ? 0 : Date.now() + 3600000;

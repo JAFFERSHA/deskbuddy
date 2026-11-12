@@ -5,17 +5,22 @@
   window.__deskBuddyLoaded = true;
 
   const api = globalThis.browser || globalThis.chrome;
-  let stage = null, host = null, settings = null, hiddenHere = false;
+  let stage = null, host = null, shadow = null, charm = null, settings = null, hiddenHere = false, charmHidden = false;
 
-  function ensureStage() {
-    if (stage) return stage;
+  function ensureHost() {
+    if (host) return shadow;
     host = document.createElement('desk-buddy');
     host.style.cssText = 'all:initial;position:fixed;left:0;bottom:0;width:0;height:0;z-index:2147483646;';
-    const shadow = host.attachShadow({ mode: 'closed' });
+    shadow = host.attachShadow({ mode: 'closed' });
     const style = document.createElement('style');
     style.textContent = DeskBuddy.CSS;
     shadow.appendChild(style);
     (document.body || document.documentElement).appendChild(host);
+    return shadow;
+  }
+  function ensureStage() {
+    if (stage) return stage;
+    ensureHost();
     stage = DeskBuddy.createStage({
       mount: shadow,
       fixed: true,
@@ -32,10 +37,24 @@
   }
   function teardown() {
     if (stage) stage.destroy();
-    if (host) host.remove();
-    stage = host = null;
+    stage = null;
+    cleanup();
+  }
+  function cleanup() {
+    if (!stage && !charm && host) { host.remove(); host = shadow = null; }
+  }
+  function applyCharm() {
+    const want = charmHidden ? 'none' : settings.charm;
+    if (want === 'none') { if (charm) { charm.destroy(); charm = null; cleanup(); } return; }
+    if (charm) { charm.setCharm(want); return; }
+    charm = DeskBuddy.createCharm({
+      mount: ensureHost(), fixed: true, charm: want, closable: true,
+      size: window.innerWidth < 700 ? 50 : 62, length: window.innerWidth < 700 ? 60 : 90,
+      onHide: () => { charmHidden = true; applyCharm(); }
+    });
   }
   function apply() {
+    applyCharm();
     if (hiddenHere) return;
     if (settings.pet) { ensureStage().setCharacter(settings.character); stage.setPet(true); }
     else if (stage) { stage.setCharacter(settings.character); stage.setPet(false); }
@@ -51,6 +70,7 @@
       hiddenHere = false;
       ensureStage().setCharacter(settings.character);
       stage.remind(msg.reminder);
+      if (charm) charm.kick(2.4);
       sendResponse({ ok: true });
     }
   });
