@@ -177,7 +177,8 @@
     var arm = doc.createElement('div');
     arm.className = 'db-charm';
     arm.style.width = size + 'px';
-    arm.style.left = opts.left || '82%';
+    var frac = typeof opts.x === 'number' ? opts.x : (opts.left ? parseFloat(opts.left) / 100 : 0.82);
+    arm.style.left = (frac * 100).toFixed(2) + '%';
     arm.style.marginLeft = (-size / 2) + 'px';
     var string = doc.createElement('div');
     string.className = 'db-string';
@@ -220,15 +221,62 @@
     }
     setCharm(opts.charm);
     draw(); start();
+    /* Drag with the pointer: left/right moves where it hangs, up/down changes the string length. */
+    var drag = null, dragged = false;
+    function limits() {
+      var W = top.clientWidth || win.innerWidth;
+      var H = opts.fixed ? win.innerHeight : (top.parentNode.clientHeight || 300);
+      return { W: W, maxLen: Math.max(0, H - body.offsetHeight - 8) };
+    }
+    function setPosition(x, len) {
+      var lim = limits();
+      if (typeof x === 'number') { frac = Math.max(0.03, Math.min(0.97, x)); arm.style.left = (frac * 100).toFixed(2) + '%'; }
+      if (typeof len === 'number') { length = Math.max(0, Math.min(lim.maxLen, len)); string.style.height = Math.round(length) + 'px'; }
+    }
+    body.addEventListener('pointerdown', function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      if (e.target && e.target.closest && e.target.closest('.db-close')) return;
+      drag = { x: e.clientX, y: e.clientY, frac: frac, len: length, lastX: e.clientX, lastT: e.timeStamp, vx: 0, moved: false };
+      try { body.setPointerCapture(e.pointerId); } catch (err) { /* older browsers */ }
+    });
     body.addEventListener('pointermove', function (e) {
-      if (lastX !== null) { var dx = e.clientX - lastX; if (Math.abs(dx) > 1) kick(Math.max(-0.5, Math.min(0.5, -dx * 0.04))); }
+      if (drag) {
+        var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+        if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
+        drag.moved = true;
+        body.classList.add('is-drag');
+        var lim = limits();
+        setPosition(drag.frac + dx / lim.W, drag.len + dy);
+        var dt = Math.max(1, e.timeStamp - drag.lastT);
+        drag.vx = (e.clientX - drag.lastX) / dt;
+        drag.lastX = e.clientX; drag.lastT = e.timeStamp;
+        if (!calm) { theta = Math.max(-0.6, Math.min(0.6, -drag.vx * 0.5)); omega = 0; draw(); }
+        e.preventDefault();
+        return;
+      }
+      if (lastX !== null) { var mx = e.clientX - lastX; if (Math.abs(mx) > 1) kick(Math.max(-0.5, Math.min(0.5, -mx * 0.04))); }
       lastX = e.clientX;
     });
+    function endDrag(e) {
+      if (!drag) return;
+      var d = drag; drag = null;
+      body.classList.remove('is-drag');
+      try { body.releasePointerCapture(e.pointerId); } catch (err) { /* not captured */ }
+      if (!d.moved) return;
+      dragged = true;
+      kick(Math.max(-3, Math.min(3, -d.vx * 2)) || 0.4);
+      if (opts.onMove) opts.onMove({ x: frac, length: Math.round(length) });
+    }
+    body.addEventListener('pointerup', endDrag);
+    body.addEventListener('pointercancel', endDrag);
     body.addEventListener('pointerleave', function () { lastX = null; });
-    body.addEventListener('click', function () { kick((Math.random() < 0.5 ? -1 : 1) * 3.2); });
+    body.addEventListener('click', function () {
+      if (dragged) { dragged = false; return; }
+      kick((Math.random() < 0.5 ? -1 : 1) * 3.2);
+    });
     var breeze = win.setInterval(function () { if (!running && !doc.hidden) kick((Math.random() < 0.5 ? -1 : 1) * 0.6); }, 9000);
     return {
-      el: top, setCharm: setCharm, kick: kick,
+      el: top, setCharm: setCharm, kick: kick, setPosition: setPosition,
       destroy: function () { dead = true; win.clearInterval(breeze); top.remove(); }
     };
   }
@@ -257,8 +305,9 @@
     '.db-top.db-fixed{position:fixed;z-index:2147483645}.db-top.db-abs{position:absolute}',
     '.db-charm{position:absolute;top:0;transform-origin:50% 0;will-change:transform;pointer-events:none}',
     '.db-string{width:2px;margin:0 auto;border-radius:1px}',
-    '.db-charm-body{position:relative;margin-top:-3px;pointer-events:auto;cursor:pointer;filter:drop-shadow(0 6px 7px rgba(0,0,0,.28));-webkit-tap-highlight-color:transparent}',
-    '.db-charm-body svg{display:block;width:100%;height:auto;overflow:visible}',
+    '.db-charm-body{position:relative;margin-top:-3px;pointer-events:auto;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;filter:drop-shadow(0 6px 7px rgba(0,0,0,.28));-webkit-tap-highlight-color:transparent}',
+    '.db-charm-body.is-drag{cursor:grabbing}',
+    '.db-charm-body svg{pointer-events:none;display:block;width:100%;height:auto;overflow:visible}',
     '.db-charm-body:hover .db-close{opacity:.9}.db-charm-body .db-close{top:-8px;right:-12px}',
     '.db-leg-l{transform-origin:51.5px 128px}.db-leg-r{transform-origin:68.5px 128px}',
     '.db-arm-l{transform-origin:33px 87px}.db-arm-r{transform-origin:87px 87px}',

@@ -46,11 +46,20 @@
   function applyCharm() {
     const want = charmHidden ? 'none' : settings.charm;
     if (want === 'none') { if (charm) { charm.destroy(); charm = null; cleanup(); } return; }
-    if (charm) { charm.setCharm(want); return; }
+    const len = settings.charmLen >= 0 ? settings.charmLen : (window.innerWidth < 700 ? 60 : 90);
+    if (charm) { charm.setCharm(want); charm.setPosition(settings.charmX, len); return; }
     charm = DeskBuddy.createCharm({
       mount: ensureHost(), fixed: true, charm: want, closable: true,
-      size: window.innerWidth < 700 ? 50 : 62, length: window.innerWidth < 700 ? 60 : 90,
-      onHide: () => { charmHidden = true; applyCharm(); }
+      size: window.innerWidth < 700 ? 50 : 62, x: settings.charmX, length: len,
+      onHide: () => { charmHidden = true; applyCharm(); },
+      onMove: pos => {
+        // Remember where the user dragged it, for every page.
+        api.storage.sync.get('settings').then(res => {
+          const next = DB.merge(res.settings);
+          next.charmX = Math.round(pos.x * 1000) / 1000; next.charmLen = pos.length;
+          return api.storage.sync.set({ settings: next });
+        }).catch(() => {});
+      }
     });
   }
   function apply() {

@@ -58,7 +58,7 @@ small{display:block;color:var(--mute);font-size:13px}
   <section>
     <h2>Hanging charm</h2>
     <div class="chars charms" id="charms"></div>
-    <small>Hangs from the top of the page. Tap it to make it swing.</small>
+    <small>Hangs from the top of the page. Tap it to swing it, or drag it left, right, up or down.</small>
   </section>
 
   <section class="pro">
@@ -120,10 +120,10 @@ small{display:block;color:var(--mute);font-size:13px}
   }
   renderChars();
 
-  var charm = null, charmId = 'evileye';
+  var charm = null, charmId = 'evileye', charmPos = { x: 0.8, length: 70 };
   function applyCharm() {
     if (charm) { charm.destroy(); charm = null; }
-    if (charmId !== 'none') charm = DeskBuddy.createCharm({ mount: document.body, fixed: true, charm: charmId, size: 58, length: 70, left: '80%' });
+    if (charmId !== 'none') charm = DeskBuddy.createCharm({ mount: document.body, fixed: true, charm: charmId, size: 58, length: charmPos.length, x: charmPos.x, onMove: function (p) { charmPos = p; } });
     var box = document.getElementById('charms');
     box.textContent = '';
     ['none'].concat(Object.keys(DeskBuddy.CHARMS)).forEach(function (id) {

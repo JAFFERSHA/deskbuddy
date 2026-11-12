@@ -32,7 +32,14 @@
     if (key === charmKey) return;
     charmKey = key;
     if (charm) { charm.destroy(); charm = null; }
-    if (want !== 'none') charm = DeskBuddy.createCharm({ mount, charm: want, size, length: Math.round(size * 0.7), left: '78%' });
+    if (want === 'none') return;
+    const saved = vscode.getState() || {};
+    charm = DeskBuddy.createCharm({
+      mount, charm: want, size,
+      x: typeof saved.x === 'number' ? saved.x : 0.78,
+      length: typeof saved.length === 'number' ? Math.min(saved.length, Math.max(0, h - size * 1.6)) : Math.round(size * 0.7),
+      onMove: pos => vscode.setState(pos)
+    });
   }
   build(); buildCharm();
   let t;
