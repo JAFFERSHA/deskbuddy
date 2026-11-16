@@ -35,6 +35,39 @@
   <div id="reminders"></div>
 </section>
 
+<section>
+  <h2>Timed reminders</h2>
+  <div id="schedules"></div>
+  <form id="sched-form" class="sched-form">
+    <input id="sched-text" type="text" maxlength="120" placeholder="Meeting with the team" aria-label="Reminder text" required>
+    <div class="sched-row">
+      <input id="sched-time" type="time" aria-label="Time" required>
+      <select id="sched-repeat" aria-label="Repeat"><option value="once">Once</option><option value="daily" selected>Every day</option><option value="weekdays">Weekdays</option></select>
+      <select id="sched-warn" aria-label="Warn before"><option value="0">At the time</option><option value="5" selected>+ 5 min before</option><option value="10">+ 10 min before</option><option value="15">+ 15 min before</option></select>
+    </div>
+    <button class="ghost wide" type="submit">Add timed reminder</button>
+  </form>
+</section>
+
+<section>
+  <h2>Focus timer</h2>
+  <div class="inline">Work <input id="focus-work" type="number" min="1" max="180" aria-label="Work minutes"> min, break <input id="focus-rest" type="number" min="1" max="60" aria-label="Break minutes"> min</div>
+  <button id="focus-toggle" class="ghost wide" type="button">Start focus timer</button>
+  <p id="focus-status" class="note"></p>
+</section>
+
+<section>
+  <h2>More options</h2>
+  <label class="row first"><span><b>Snooze length</b><small>How long "Snooze" waits</small></span>
+    <select id="snooze" aria-label="Snooze length"><option value="5">5 min</option><option value="10">10 min</option><option value="30">30 min</option></select></label>
+  <label class="row"><span><b>Quiet hours</b><small>No repeating reminders from <input id="quiet-from" type="time" aria-label="Quiet from"> to <input id="quiet-to" type="time" aria-label="Quiet to"></small></span>
+    <input id="quiet-on" class="switch" type="checkbox"></label>
+  <label class="row"><span><b>Daily summary</b><small>What you did today, at <input id="summary-time" type="time" aria-label="Summary time"></small></span>
+    <input id="summary-on" class="switch" type="checkbox"></label>
+  <label class="row"><span><b>Animations</b><small>Water drop, rocket, balloon and confetti</small></span>
+    <input id="effects" class="switch" type="checkbox"></label>
+</section>
+
 <section class="pro">
   <div class="pro-head"><span class="badge">PRO</span><h2>Coming soon</h2></div>
   <ul>
@@ -52,6 +85,7 @@
 </section>
 
 <script src="../buddy-core.js"></script>
+<script src="../engine.js"></script>
 <script src="../defaults.js"></script>
 <script src="popup.js"></script>
 </body>

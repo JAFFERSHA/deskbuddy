@@ -24,8 +24,14 @@
     charmLen: -1,
     snooze: 10,
     pausedUntil: 0,
+    effects: true,
+    schedules: [],
+    quiet: { on: false, from: '22:00', to: '08:00' },
+    summary: { on: false, time: '18:00' },
+    focus: { work: 50, rest: 10 },
     reminders: {}
   };
+  var TIME = /^([01]?\d|2[0-3]):[0-5]\d$/;
   Object.keys(REMINDERS).forEach(function (k) {
     DEFAULTS.reminders[k] = { on: REMINDERS[k].on, every: REMINDERS[k].every, text: REMINDERS[k].text };
   });
@@ -44,6 +50,16 @@
         if (typeof r.text === 'string' && r.text.trim()) s.reminders[k].text = r.text.slice(0, 160);
       }
     });
+    if (typeof saved.effects === 'boolean') s.effects = saved.effects;
+    s.snooze = [5, 10, 30].indexOf(Number(s.snooze)) >= 0 ? Number(s.snooze) : 10;
+    if (Array.isArray(saved.schedules)) {
+      s.schedules = saved.schedules.filter(function (x) { return x && typeof x.text === 'string' && x.text.trim() && TIME.test(x.time); }).slice(0, 20).map(function (x, i) {
+        return { id: String(x.id || 't' + i), text: x.text.trim().slice(0, 120), time: x.time, repeat: ['once', 'daily', 'weekdays'].indexOf(x.repeat) >= 0 ? x.repeat : 'daily', warn: [0, 5, 10, 15].indexOf(Number(x.warn)) >= 0 ? Number(x.warn) : 0, on: x.on !== false };
+      });
+    }
+    if (saved.quiet) s.quiet = { on: !!saved.quiet.on, from: TIME.test(saved.quiet.from) ? saved.quiet.from : '22:00', to: TIME.test(saved.quiet.to) ? saved.quiet.to : '08:00' };
+    if (saved.summary) s.summary = { on: !!saved.summary.on, time: TIME.test(saved.summary.time) ? saved.summary.time : '18:00' };
+    if (saved.focus) s.focus = { work: Math.max(1, Math.min(180, Math.round(saved.focus.work) || 50)), rest: Math.max(1, Math.min(60, Math.round(saved.focus.rest) || 10)) };
     if (!(s.charmX >= 0 && s.charmX <= 1)) s.charmX = 0.82;
     if (typeof s.charmLen !== 'number') s.charmLen = -1;
     if (root.DeskBuddy && s.charm !== 'none' && !root.DeskBuddy.CHARMS[s.charm]) s.charm = 'none';
@@ -56,6 +72,7 @@
   function reminderPayload(id, settings) {
     var meta = REMINDERS[id], r = settings.reminders[id];
     if (!meta || !r) return null;
+    if (root.DBEngine) return root.DBEngine.intervalPayload(id, settings, REMINDERS);
     return {
       id: id,
       kind: id,

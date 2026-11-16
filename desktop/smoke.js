@@ -10,7 +10,15 @@ module.exports = async function (ctx) {
   ctx.settingsWin().webContents.on('console-message', (e, level, msg) => { if (level >= 2) errors.push('settings: ' + msg); });
   ctx.update(s => { s.charm = 'evileye'; s.name = 'Jaffer'; });
   await wait(4500);
-  ctx.fire('water', true);
+  // A timed reminder due right now must come through the engine tick.
+  const d = new Date(), hhmm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  ctx.update(s => { s.schedules = [{ id: 'm1', text: 'Team meeting', time: hhmm, repeat: 'once', warn: 0, on: true }]; });
+  await wait(600);
+  ctx.tick();
+  await wait(2600);
+  const sched = await ctx.overlay().webContents.executeJavaScript("(document.querySelector('.db-bubble')||{}).innerText");
+  console.log('SCHED', JSON.stringify(sched), 'once now off:', ctx.store().sync.settings.schedules[0].on === false);
+  ctx.fire('water');
   await wait(2600);
   fs.writeFileSync(out + '/overlay.png', (await ctx.overlay().webContents.capturePage()).toPNG());
   fs.writeFileSync(out + '/settings.png', (await ctx.settingsWin().webContents.capturePage()).toPNG());

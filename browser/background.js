@@ -1,5 +1,5 @@
-/* DeskBuddy background: schedules reminders with alarms and hands them to the active tab. */
-if (typeof importScripts === 'function') importScripts('defaults.js');
+/* DeskBuddy background: runs the shared reminder engine once a minute and hands what is due to the active tab. */
+if (typeof importScripts === 'function') importScripts('defaults.js', 'engine.js');
 
 const api = globalThis.browser || globalThis.chrome;
 
@@ -8,33 +8,7 @@ async function getSettings() {
   return DB.merge(settings);
 }
 
-async function schedule() {
-  const s = await getSettings();
-  const existing = await api.alarms.getAll();
-  for (const id of Object.keys(DB.REMINDERS)) {
-    const name = 'rem:' + id;
-    const r = s.reminders[id];
-    const cur = existing.find(a => a.name === name);
-    if (!r.on) { if (cur) await api.alarms.clear(name); continue; }
-    if (!cur || cur.periodInMinutes !== r.every) {
-      await api.alarms.create(name, { delayInMinutes: r.every, periodInMinutes: r.every });
-    }
-  }
-}
-
-async function bumpStat(id) {
-  const { stats } = await api.storage.local.get('stats');
-  const day = DB.today();
-  const st = stats && stats.day === day ? stats : { day, counts: {} };
-  st.counts[id] = (st.counts[id] || 0) + 1;
-  await api.storage.local.set({ stats: st });
-}
-
-async function fire(id, force) {
-  const s = await getSettings();
-  if (!force && (s.pausedUntil > Date.now() || !s.reminders[id] || !s.reminders[id].on)) return;
-  const payload = DB.reminderPayload(id, s);
-  if (!payload) return;
+async function deliver(payload) {
   try {
     const [tab] = await api.tabs.query({ active: true, lastFocusedWindow: true });
     if (!tab || tab.id === undefined) throw new Error('no tab');
@@ -43,43 +17,61 @@ async function fire(id, force) {
   } catch (e) {
     // Pages where the buddy cannot appear (new tab, store pages, PDFs): use a system notification.
     try {
-      await api.notifications.create('db:' + id + ':' + Date.now(), {
+      await api.notifications.create('db:' + payload.key + ':' + Date.now(), {
         type: 'basic',
         iconUrl: api.runtime.getURL('icons/icon128.png'),
-        title: 'DeskBuddy: ' + DB.REMINDERS[id].title,
+        title: 'DeskBuddy: ' + (payload.title || 'Reminder'),
         message: payload.text
       });
     } catch (err) { /* notifications unavailable */ }
   }
 }
 
-api.alarms.onAlarm.addListener(alarm => {
-  if (alarm.name.startsWith('rem:')) fire(alarm.name.slice(4), false);
-  else if (alarm.name.startsWith('snooze:')) fire(alarm.name.slice(7), false);
-});
+let busy = false;
+async function tick() {
+  if (busy) return;
+  busy = true;
+  try {
+    const s = await getSettings();
+    const { engine, stats } = await api.storage.local.get(['engine', 'stats']);
+    const res = DBEngine.tick(s, engine, Date.now(), stats, DB.REMINDERS);
+    await api.storage.local.set({ engine: res.state });
+    if (res.settingsChanged) await api.storage.sync.set({ settings: s });
+    if (res.payload) await deliver(res.payload);
+  } finally { busy = false; }
+}
+
+async function ensureAlarm() {
+  const a = await api.alarms.get('tick');
+  if (!a) await api.alarms.create('tick', { delayInMinutes: 1, periodInMinutes: 1 });
+}
+
+api.alarms.onAlarm.addListener(alarm => { if (alarm.name === 'tick') tick(); });
 
 api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || typeof msg.type !== 'string') return;
   (async () => {
-    if (msg.type === 'db:action' && DB.REMINDERS[msg.id]) {
-      if (msg.action === 'done') await bumpStat(msg.id);
-      if (msg.action === 'later') {
-        const s = await getSettings();
-        await api.alarms.create('snooze:' + msg.id, { delayInMinutes: Math.max(1, s.snooze) });
-      }
+    const s = await getSettings();
+    if (msg.type === 'db:action' && msg.p && typeof msg.p.key === 'string') {
+      const { engine, stats } = await api.storage.local.get(['engine', 'stats']);
+      const res = DBEngine.act(s, engine, stats, msg.p, String(msg.action), Date.now());
+      await api.storage.local.set({ engine: res.state, stats: res.stats });
     } else if (msg.type === 'db:test' && DB.REMINDERS[msg.id]) {
-      await fire(msg.id, true);
+      await deliver(DBEngine.intervalPayload(msg.id, s, DB.REMINDERS));
+    } else if (msg.type === 'db:focus') {
+      const { engine } = await api.storage.local.get('engine');
+      await api.storage.local.set({ engine: DBEngine.setFocus(s, engine, !!msg.on, Date.now()) });
+    } else if (msg.type === 'db:tick') {
+      await tick();
     }
     sendResponse({ ok: true });
   })();
   return true;
 });
 
-api.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync' && changes.settings) schedule();
-});
-api.runtime.onInstalled.addListener(schedule);
-api.runtime.onStartup.addListener(schedule);
+api.runtime.onInstalled.addListener(() => { api.alarms.clearAll().then(ensureAlarm); });
+api.runtime.onStartup.addListener(ensureAlarm);
+ensureAlarm();
 if (api.notifications && api.notifications.onClicked) {
   api.notifications.onClicked.addListener(id => { if (id.startsWith('db:')) api.notifications.clear(id); });
 }

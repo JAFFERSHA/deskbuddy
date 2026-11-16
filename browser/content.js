@@ -18,6 +18,12 @@
     (document.body || document.documentElement).appendChild(host);
     return shadow;
   }
+  let fx = null;
+  function ensureFx() {
+    if (!fx) fx = DeskBuddy.createFx({ mount: ensureHost(), fixed: true });
+    return fx;
+  }
+  const FX_X = { drop: 0.16, rocket: 0.3, balloon: 0.32, peek: 0.86, confetti: 0.5 };
   function ensureStage() {
     if (stage) return stage;
     ensureHost();
@@ -28,8 +34,8 @@
       character: settings.character,
       closable: true,
       onAction: (action, r) => {
-        if (action === 'timeout') action = 'later';
-        try { api.runtime.sendMessage({ type: 'db:action', id: r.id, action }); } catch (e) { /* extension reloaded */ }
+        if (action === 'done' && settings.effects) ensureFx().play('confetti', { x: 0.12 });
+        try { api.runtime.sendMessage({ type: 'db:action', action, p: { key: r.key, id: r.id, kind: r.kind, counts: !!r.counts } }); } catch (e) { /* extension reloaded */ }
       },
       onHide: () => { hiddenHere = true; teardown(); }
     });
@@ -41,7 +47,7 @@
     cleanup();
   }
   function cleanup() {
-    if (!stage && !charm && host) { host.remove(); host = shadow = null; }
+    if (!stage && !charm && host) { if (fx) { fx.destroy(); fx = null; } host.remove(); host = shadow = null; }
   }
   function applyCharm() {
     const want = charmHidden ? 'none' : settings.charm;
@@ -80,6 +86,7 @@
       ensureStage().setCharacter(settings.character);
       stage.remind(msg.reminder);
       if (charm) charm.kick(2.4);
+      if (settings.effects && msg.reminder.effect) ensureFx().play(msg.reminder.effect, { x: FX_X[msg.reminder.effect] || 0.5, character: settings.character });
       sendResponse({ ok: true });
     }
   });

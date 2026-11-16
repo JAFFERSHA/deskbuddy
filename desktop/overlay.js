@@ -6,12 +6,17 @@
   document.head.appendChild(style);
 
   let settings = null, stage = null, charm = null, petHidden = false, charmHidden = false;
+  const fx = DeskBuddy.createFx({ mount: document.body, fixed: true });
+  const FX_X = { drop: 0.12, rocket: 0.24, balloon: 0.26, peek: 0.88, confetti: 0.5 };
 
   function ensureStage() {
     if (stage) return stage;
     stage = DeskBuddy.createStage({
       mount: document.body, fixed: true, size: 100, character: settings.character, closable: true,
-      onAction: (action, r) => host.action(action === 'timeout' ? 'later' : action, r.id),
+      onAction: (action, r) => {
+        if (action === 'done' && settings.effects) fx.play('confetti', { x: 0.1 });
+        host.action(action, { key: r.key, id: r.id, kind: r.kind, counts: !!r.counts });
+      },
       onHide: () => { petHidden = true; stage.setPet(false); }
     });
     return stage;
@@ -36,12 +41,17 @@
     if (settings && s.charm !== settings.charm) charmHidden = false;
     settings = s; apply();
   });
-  host.onRemind(r => { if (!settings) return; petHidden = false; ensureStage().remind(r); if (charm) charm.kick(2.4); });
+  host.onRemind(r => {
+    if (!settings) return;
+    petHidden = false; ensureStage().remind(r);
+    if (charm) charm.kick(2.4);
+    if (settings.effects && r.effect) fx.play(r.effect, { x: FX_X[r.effect] || 0.5, character: settings.character });
+  });
 
   // The window ignores the mouse everywhere except over the buddy, its bubble and the charm.
   let over = false, pressed = false;
   function check(e) {
-    const hit = !!(e.target && e.target.closest && e.target.closest('.db-actor, .db-bubble, .db-charm-body'));
+    const hit = !!(e.target && e.target.closest && e.target.closest('.db-actor, .db-bubble, .db-charm-body, .db-fx-click'));
     if (hit !== over && !pressed) { over = hit; host.setIgnore(!hit); }
   }
   window.addEventListener('mousemove', check);

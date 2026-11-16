@@ -8,6 +8,9 @@ A friendly animated character that walks onto your screen and reminds you to dri
 - Water, break, stretch, eye rest and one custom reminder, each with its own interval
 - "Yes" / "Remind me later" (snooze), pause for 1 hour, daily water count
 - Hanging charms (evil eye, lemon and chilli, drishti mask, hamsa hand, Webby the spider) that dangle from the top of the page and swing when touched
+- Timed reminders at a set time, with an optional early warning; snooze or skip for the day
+- Focus timer, quiet hours and an optional daily summary
+- Water drop, rocket, balloon, peek and confetti animations
 - Desk pet mode: the buddy strolls along the bottom of the page or the VS Code view
 - Pro preview: locked characters and a "your photo as a buddy" teaser with an interest/waitlist form. No payments.
 
@@ -17,7 +20,9 @@ A friendly animated character that walks onto your screen and reminds you to dri
 | --- | --- |
 | `shared/buddy-core.js` | Characters, animations and the walking stage. Single source used everywhere. |
 | `browser/` | Browser extension (Manifest V3). One codebase, two manifests. |
-| `vscode/` | VS Code extension (plain JavaScript, no build step). |
+| `shared/engine.js` | Reminder logic (what is due when). Single source used everywhere. |
+| `vscode/` | VS Code extension (plain JavaScript). |
+| `desktop/` | Desktop app for macOS, Windows and Linux (Electron). Shows the buddy over the whole screen. |
 | `demo/` | Source of the live demo page. |
 | `scripts/build.js` | Builds everything into `dist/`. |
 
@@ -27,6 +32,18 @@ A friendly animated character that walks onto your screen and reminds you to dri
 node scripts/build.js                      # dist/deskbuddy-chrome-edge.zip, dist/deskbuddy-firefox.zip, dist/demo.html
 cd vscode && npx @vscode/vsce package --no-dependencies   # .vsix
 ```
+
+## Desktop app
+
+```
+cd desktop
+npm install
+npm start            # run it
+npm run dist:mac     # build a .dmg (on a Mac)
+npm run dist:win     # build a Windows installer
+```
+
+The Mac build is ad-hoc signed, so macOS shows an "unidentified developer" warning; open it once through System Settings > Privacy & Security > Open Anyway.
 
 ## Try it without a store
 

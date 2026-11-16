@@ -4,7 +4,9 @@
   style.textContent = DeskBuddy.CSS;
   document.head.appendChild(style);
   const mount = document.getElementById('stage');
-  let stage = null, charm = null, charmKey = '', settings = { character: 'mika', pet: true, charm: 'none' }, builtFor = 0;
+  let stage = null, charm = null, charmKey = '', settings = { character: 'mika', pet: true, charm: 'none', effects: true }, builtFor = 0, fxLayer = null;
+  const fx = () => fxLayer || (fxLayer = DeskBuddy.createFx({ mount }));
+  const FX_X = { drop: 0.3, rocket: 0.5, balloon: 0.55, peek: 0.8, confetti: 0.5 };
 
   // The view can be any height, so the character is sized to fit it.
   function fitSize() {
@@ -19,7 +21,11 @@
     builtFor = size;
     stage = DeskBuddy.createStage({
       mount, size, character: settings.character,
-      onAction: (action, r) => { if (!r.quiet) vscode.postMessage({ type: 'action', action, id: r.id }); }
+      onAction: (action, r) => {
+        if (r.quiet) return;
+        if (action === 'done' && settings.effects && mount.clientHeight >= 210) fx().play('confetti', { x: 0.2 });
+        vscode.postMessage({ type: 'action', action, p: { key: r.key, id: r.id, kind: r.kind, counts: !!r.counts } });
+      }
     });
     stage.setPet(settings.pet);
   }
@@ -46,12 +52,16 @@
   window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { build(); buildCharm(); }, 150); });
   window.addEventListener('message', e => {
     const m = e.data;
-    if (m.type === 'settings') { settings = { character: m.character, pet: m.pet, charm: m.charm || 'none' }; stage.setCharacter(m.character); stage.setPet(m.pet); buildCharm(); }
+    if (m.type === 'settings') { settings = { character: m.character, pet: m.pet, charm: m.charm || 'none', effects: m.effects !== false }; stage.setCharacter(m.character); stage.setPet(m.pet); buildCharm(); }
     if (m.type === 'remind') {
       if (charm) charm.kick(2.4);
-      if (mount.clientHeight >= 210) { stage.remind(m.reminder); return; }
+      if (mount.clientHeight >= 210) {
+        stage.remind(m.reminder);
+        if (settings.effects && m.reminder.effect) fx().play(m.reminder.effect, { x: FX_X[m.reminder.effect] || 0.5, character: settings.character });
+        return;
+      }
       // Panel too short for the bubble and buttons: wave here, and let VS Code show the question.
-      vscode.postMessage({ type: 'fallback', id: m.reminder.id });
+      vscode.postMessage({ type: 'fallback', p: m.reminder });
       stage.remind({ id: m.reminder.id, kind: m.reminder.kind, quiet: true, text: 'Hey!', actions: [], timeout: 5000 });
     }
   });

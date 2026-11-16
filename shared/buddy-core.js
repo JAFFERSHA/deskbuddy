@@ -501,6 +501,7 @@
     '@keyframes db-tail{from{transform:rotate(-8deg)}to{transform:rotate(14deg)}}',
     '@keyframes db-blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}',
     '.db-bubble{position:absolute;left:0;box-sizing:border-box;width:max-content;max-width:min(270px,calc(100vw - 16px));max-height:calc(100vh - 12px);overflow:auto;padding:12px 14px;border-radius:16px;background:#fff;color:#1c1e26;font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.06);pointer-events:auto;animation:db-pop .22s cubic-bezier(.2,1.4,.4,1)}',
+    '.db-bubble-title{margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#2f6bff}',
     '.db-bubble-text{font-weight:600;margin:0}',
     '.db-bubble-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}',
     '.db-btn{font:inherit;font-size:13px;font-weight:600;border-radius:999px;padding:7px 14px;border:1px solid #d5d8e0;background:#fff;color:#1c1e26;cursor:pointer}',
@@ -598,8 +599,14 @@
       });
     }
     function show() { if (actor.hidden) { actor.hidden = false; x = -size; place(); } }
-    function say(text, actions) {
+    function say(text, actions, title) {
       bubble.textContent = '';
+      if (title) {
+        var t = doc.createElement('p');
+        t.className = 'db-bubble-title';
+        t.textContent = title;
+        bubble.appendChild(t);
+      }
       var p = doc.createElement('p');
       p.className = 'db-bubble-text';
       p.textContent = text;
@@ -650,11 +657,11 @@
       if (opts.onAction) opts.onAction(actionId, r);
       if (actionId === 'done') {
         facing = 1;
-        if (r.kind === 'water') { say('Cheers!'); setAnim('drink'); await wait(1800); if (my !== flow) return; }
+        if (r.id === 'water') { say('Cheers!'); setAnim('drink'); await wait(1800); if (my !== flow) return; }
         say(r.cheer || 'Nice one!'); setAnim('cheer');
         await wait(1500);
-      } else if (actionId === 'later') {
-        say('Okay, I will ask again soon.'); setAnim('idle');
+      } else if (actionId === 'later' || actionId === 'skip') {
+        say(actionId === 'skip' ? 'Okay, not again today.' : (r.snoozeText || 'Okay, I will ask again soon.')); setAnim('idle');
         await wait(1300);
       }
       settle(my);
@@ -674,7 +681,7 @@
         await walkTo(tx, 190);
         if (my !== flow) return;
         facing = 1; setAnim('wave');
-        say(r.text, r.actions || [{ id: 'done', label: 'Done', primary: true }, { id: 'later', label: 'Remind me later' }]);
+        say(r.text, r.actions || [{ id: 'done', label: 'Done', primary: true }, { id: 'later', label: 'Remind me later' }], r.title);
         await wait(r.timeout || 60000);
         if (my !== flow) return;
         current = null;

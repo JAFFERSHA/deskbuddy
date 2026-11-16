@@ -2,13 +2,36 @@
   "manifest_version": 3,
   "name": "DeskBuddy: Animated Reminder Buddy",
   "short_name": "DeskBuddy",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A friendly animated character that walks onto your screen and reminds you to drink water, take breaks and stretch.",
-  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
-  "action": { "default_popup": "popup/popup.html", "default_title": "DeskBuddy" },
-  "background": { "service_worker": "background.js" },
-  "permissions": ["storage", "alarms", "notifications"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "DeskBuddy"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications"
+  ],
   "content_scripts": [
-    { "matches": ["<all_urls>"], "js": ["buddy-core.js", "defaults.js", "content.js"], "run_at": "document_idle" }
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "buddy-core.js",
+        "defaults.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
   ]
 }

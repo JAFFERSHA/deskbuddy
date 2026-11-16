@@ -1,7 +1,7 @@
 {
   "name": "deskbuddy-desktop",
   "productName": "DeskBuddy",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A friendly animated character that lives on your desktop and reminds you to drink water, take breaks and stretch.",
   "author": "Zero to Deploy <support@zerotodeploy.in>",
   "license": "MIT",
@@ -20,11 +20,43 @@
   "build": {
     "appId": "in.zerotodeploy.deskbuddy",
     "productName": "DeskBuddy",
-    "files": ["main.js", "preload-overlay.js", "preload-settings.js", "overlay.html", "overlay.js", "ui/**/*", "build/icon.png"],
-    "directories": { "output": "release" },
-    "mac": { "category": "public.app-category.productivity", "target": ["dmg"], "identity": "-", "hardenedRuntime": false, "extendInfo": { "LSUIElement": true } },
-    "win": { "target": ["nsis"] },
-    "nsis": { "oneClick": true, "perMachine": false },
-    "linux": { "target": ["AppImage"], "category": "Utility" }
+    "files": [
+      "main.js",
+      "preload-overlay.js",
+      "preload-settings.js",
+      "overlay.html",
+      "overlay.js",
+      "ui/**/*",
+      "build/icon.png"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg"
+      ],
+      "identity": "-",
+      "hardenedRuntime": false,
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    }
   }
 }

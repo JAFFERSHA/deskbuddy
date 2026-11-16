@@ -47,3 +47,19 @@ button.ghost:hover,.try:hover{background:#30364a}
 .charms{grid-template-columns:repeat(3,1fr)}
 .charms .char svg{width:auto;height:52px}
 .charms .none{display:grid;place-items:center;height:52px;font-size:20px;color:var(--mute)}
+
+select,input[type=time]{font:inherit;color:var(--text);background:#12141a;border:1px solid var(--line);border-radius:8px;padding:5px 6px}
+small input[type=time]{font-size:12px;padding:2px 4px;margin:2px 0}
+.sched-form{display:grid;gap:8px;margin-top:10px}
+.sched-form input[type=text]{margin:0}
+.sched-row{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px}
+.sched-row select{min-width:0}
+.wide{width:100%;padding:8px;border-radius:10px;font-size:13px}
+.sched{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.sched b{display:block;overflow-wrap:anywhere}
+.sched small{color:var(--mute);font-size:12px}
+.sched .del{font:inherit;color:var(--mute);background:none;border:0;cursor:pointer;font-size:16px;padding:4px 6px}
+.sched .del:hover{color:#ff6b6b}
+.inline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px;color:var(--mute)}
+.row.first{margin-top:0}
+.empty{color:var(--mute);font-size:12px;margin:0}

@@ -97,6 +97,11 @@ body[data-view="mac"] [data-os="mac"],body[data-view="win"] [data-os="win"]{disp
     </div>
   </div>
   <section class="card">
+    <h2>Notification messages</h2>
+    <p style="color:var(--mute);margin-bottom:12px">Tap one and the buddy walks in with it. Try Snooze: in this preview it comes back after 6 seconds (the real app waits the minutes shown).</p>
+    <div class="chips fx" id="msgs"></div>
+  </section>
+  <section class="card">
     <h2>Reminder animations</h2>
     <p style="color:var(--mute);margin-bottom:12px">Tap one to play it on the screen above. These are new ideas, not in the extension yet.</p>
     <div class="chips fx" id="fx"></div>
@@ -145,7 +150,7 @@ body[data-view="mac"] [data-os="mac"],body[data-view="win"] [data-os="win"]{disp
   document.head.appendChild(style);
   var screen = document.getElementById('screen'), area = document.getElementById('area'), menu = document.getElementById('menu');
   var state = { view: 'mac', character: 'mika', charm: 'evileye', pet: true, pos: { x: 0.2, length: null } };
-  var stage = null, charm = null, fx = null;
+  var stage = null, charm = null, fx = null, snooze = null;
   DeskBuddy.render(document.getElementById('tray-mac'), 'mika');
   DeskBuddy.render(document.getElementById('tray-win'), 'mika');
 
@@ -157,7 +162,10 @@ body[data-view="mac"] [data-os="mac"],body[data-view="win"] [data-os="win"]{disp
     var size = Math.round(Math.max(34, Math.min(84, w * 0.09)));
     if (fx) fx.destroy();
     fx = DeskBuddy.createFx({ mount: area });
-    stage = DeskBuddy.createStage({ mount: area, size: size, character: state.character });
+    stage = DeskBuddy.createStage({ mount: area, size: size, character: state.character, onAction: function (action, r) {
+      if (action === 'done' && fx && r.confetti) fx.play('confetti', { x: 0.12 });
+      if (action === 'later' && r.msg) { clearTimeout(snooze); snooze = setTimeout(function () { notify(r.msg, true); }, 6000); }
+    } });
     stage.setPet(state.pet);
     if (state.charm !== 'none') {
       charm = DeskBuddy.createCharm({
@@ -204,6 +212,22 @@ body[data-view="mac"] [data-os="mac"],body[data-view="win"] [data-os="win"]{disp
   ['tray-mac', 'tray-win'].forEach(function (id) { document.getElementById(id).addEventListener('click', function () { menu.hidden = !menu.hidden; }); });
   document.getElementById('m-pet').addEventListener('change', function (e) { state.pet = e.target.checked; stage.setPet(state.pet); });
   var t; window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(build, 200); });
+  var MSGS = {
+    meeting: ['Meeting in 5 min', 'Meeting \u00b7 10:55', 'Design review starts at 11:00, in 5 minutes.', 'On my way', 'Snooze 2 min', 'See you there!'],
+    brk: ['Short break', 'Break', 'You have been working for 50 minutes. Take a short break?', 'Taking it', 'Snooze 10 min', 'Enjoy the break!'],
+    lunch: ['Lunch time', 'Lunch \u00b7 13:00', 'It is 1 o\u2019clock. Time to eat something.', 'Going', 'Snooze 15 min', 'Enjoy your lunch!'],
+    posture: ['Posture check', 'Posture', 'Sit up straight and relax your shoulders.', 'Fixed', 'Snooze 10 min', 'Looking good!'],
+    task: ['Custom reminder', 'Your reminder \u00b7 16:30', 'Send the invoice to the client.', 'Done', 'Snooze 30 min', 'Ticked off!'],
+    day: ['End of day', 'Wrap up \u00b7 18:00', 'Good work today. Time to log off.', 'Logging off', 'Snooze 15 min', 'See you tomorrow!']
+  };
+  function notify(k, again) {
+    var m = MSGS[k];
+    menu.hidden = true;
+    screen.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (charm) charm.kick(2.4);
+    stage.remind({ id: k, kind: k, msg: k, confetti: true, title: (again ? 'Snoozed \u00b7 ' : '') + m[1], text: m[2], cheer: m[5], snoozeText: 'Okay, snoozed.', actions: [{ id: 'done', label: m[3], primary: true }, { id: 'later', label: m[4] }] });
+  }
+  chips('msgs', Object.keys(MSGS).map(function (k) { return [k, MSGS[k][0]]; }), undefined, function (k) { notify(k, false); });
   var FXDEMO = { drop: ['Did you drink water?', 0.3], rocket: ['Break time!', 0.42], balloon: ['Time to stretch', 0.6], peek: ['Rest your eyes for 20 seconds', 0.7], confetti: ['Nice one!', 0.5] };
   chips('fx', Object.keys(DeskBuddy.FX).map(function (k) { return [k, DeskBuddy.FX[k]]; }), undefined, function (k) {
     menu.hidden = true;

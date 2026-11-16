@@ -2,7 +2,7 @@
   "name": "deskbuddy",
   "displayName": "DeskBuddy: Animated Reminder Buddy",
   "description": "A friendly animated character in your sidebar that reminds you to drink water, take breaks and stretch while you code.",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "publisher": "jaffersha",
   "license": "MIT",
   "icon": "icon.png",
@@ -65,6 +65,20 @@
         "command": "deskbuddy.openSettings",
         "title": "DeskBuddy: Open Settings",
         "icon": "$(gear)"
+      },
+      {
+        "command": "deskbuddy.addTimedReminder",
+        "title": "DeskBuddy: Add Timed Reminder",
+        "icon": "$(clock)"
+      },
+      {
+        "command": "deskbuddy.removeTimedReminder",
+        "title": "DeskBuddy: Remove Timed Reminder"
+      },
+      {
+        "command": "deskbuddy.toggleFocus",
+        "title": "DeskBuddy: Start or Stop Focus Timer",
+        "icon": "$(target)"
       }
     ],
     "configuration": {
@@ -113,9 +127,13 @@
         },
         "deskbuddy.snoozeMinutes": {
           "type": "number",
+          "enum": [
+            5,
+            10,
+            30
+          ],
           "default": 10,
-          "minimum": 1,
-          "description": "Minutes to wait after 'Remind me later'."
+          "description": "Minutes to wait after Snooze."
         },
         "deskbuddy.water.enabled": {
           "type": "boolean",
@@ -176,6 +194,94 @@
           "type": "string",
           "default": "Your own reminder goes here.",
           "description": "Text of the custom reminder. Use {name} for your name."
+        },
+        "deskbuddy.schedules": {
+          "type": "array",
+          "default": [],
+          "description": "Timed reminders. Easiest to edit with the command 'DeskBuddy: Add Timed Reminder'.",
+          "items": {
+            "type": "object",
+            "required": [
+              "text",
+              "time"
+            ],
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "time": {
+                "type": "string",
+                "pattern": "^([01]?\\d|2[0-3]):[0-5]\\d$",
+                "description": "24-hour time, for example 11:00"
+              },
+              "repeat": {
+                "type": "string",
+                "enum": [
+                  "once",
+                  "daily",
+                  "weekdays"
+                ],
+                "default": "daily"
+              },
+              "warn": {
+                "type": "number",
+                "enum": [
+                  0,
+                  5,
+                  10,
+                  15
+                ],
+                "default": 0,
+                "description": "Also warn this many minutes before."
+              },
+              "on": {
+                "type": "boolean",
+                "default": true
+              }
+            }
+          }
+        },
+        "deskbuddy.quietHours.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "No repeating reminders during quiet hours. Timed reminders still come through."
+        },
+        "deskbuddy.quietHours.from": {
+          "type": "string",
+          "default": "22:00",
+          "description": "Quiet hours start (24-hour time)."
+        },
+        "deskbuddy.quietHours.to": {
+          "type": "string",
+          "default": "08:00",
+          "description": "Quiet hours end (24-hour time)."
+        },
+        "deskbuddy.dailySummary.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a summary of the day's check-ins."
+        },
+        "deskbuddy.dailySummary.time": {
+          "type": "string",
+          "default": "18:00",
+          "description": "When to show the daily summary (24-hour time)."
+        },
+        "deskbuddy.focus.workMinutes": {
+          "type": "number",
+          "default": 50,
+          "minimum": 1,
+          "description": "Focus timer: minutes of work."
+        },
+        "deskbuddy.focus.breakMinutes": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "description": "Focus timer: minutes of break."
+        },
+        "deskbuddy.animations": {
+          "type": "boolean",
+          "default": true,
+          "description": "Play the water drop, rocket, balloon and confetti animations in the DeskBuddy view."
         }
       }
     },
@@ -192,24 +298,39 @@
           "group": "navigation@2"
         },
         {
-          "command": "deskbuddy.remindNow",
+          "command": "deskbuddy.addTimedReminder",
           "when": "view == deskbuddy.view",
           "group": "navigation@3"
         },
         {
-          "command": "deskbuddy.openSettings",
+          "command": "deskbuddy.toggleFocus",
           "when": "view == deskbuddy.view",
           "group": "navigation@4"
         },
         {
-          "command": "deskbuddy.togglePause",
+          "command": "deskbuddy.openSettings",
+          "when": "view == deskbuddy.view",
+          "group": "navigation@5"
+        },
+        {
+          "command": "deskbuddy.remindNow",
           "when": "view == deskbuddy.view",
           "group": "more@1"
         },
         {
-          "command": "deskbuddy.showPro",
+          "command": "deskbuddy.removeTimedReminder",
           "when": "view == deskbuddy.view",
           "group": "more@2"
+        },
+        {
+          "command": "deskbuddy.togglePause",
+          "when": "view == deskbuddy.view",
+          "group": "more@3"
+        },
+        {
+          "command": "deskbuddy.showPro",
+          "when": "view == deskbuddy.view",
+          "group": "more@4"
         }
       ]
     }

@@ -100,6 +100,47 @@
     });
   }
 
+  const REPEAT = { once: 'Once', daily: 'Every day', weekdays: 'Weekdays' };
+  function renderSchedules() {
+    const box = $('schedules');
+    box.textContent = '';
+    if (!settings.schedules.length) {
+      const p = document.createElement('p'); p.className = 'empty';
+      p.textContent = 'None yet. Add one for a meeting, medicine or anything at a set time.';
+      box.appendChild(p); return;
+    }
+    settings.schedules.forEach((sc, i) => {
+      const row = document.createElement('div'); row.className = 'sched';
+      const sw = document.createElement('input');
+      sw.type = 'checkbox'; sw.className = 'switch'; sw.checked = sc.on;
+      sw.setAttribute('aria-label', 'Turn on ' + sc.text);
+      sw.addEventListener('change', () => { sc.on = sw.checked; save(); });
+      const info = document.createElement('div');
+      const b = document.createElement('b'); b.textContent = sc.text;
+      const sm = document.createElement('small');
+      sm.textContent = sc.time + ' \u00b7 ' + REPEAT[sc.repeat] + (sc.warn ? ' \u00b7 ' + sc.warn + ' min warning' : '');
+      info.append(b, sm);
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'del'; del.textContent = '\u2715';
+      del.setAttribute('aria-label', 'Delete ' + sc.text);
+      del.addEventListener('click', () => { settings.schedules.splice(i, 1); save(); renderSchedules(); });
+      row.append(sw, info, del);
+      box.appendChild(row);
+    });
+  }
+
+  async function renderFocus() {
+    const { engine } = await api.storage.local.get('engine');
+    const f = engine && engine.focus;
+    const on = !!(f && f.on);
+    $('focus-toggle').textContent = on ? 'Stop focus timer' : 'Start focus timer';
+    $('focus-toggle').dataset.on = on ? '1' : '';
+    if (on) {
+      const mins = Math.max(0, Math.ceil((f.until - Date.now()) / 60000));
+      $('focus-status').textContent = (f.phase === 'work' ? 'Working' : 'On a break') + ': ' + mins + ' min left. The break reminder is paused while this runs.';
+    } else $('focus-status').textContent = 'The buddy tells you when to take a break and when to get back to work.';
+  }
+
   function renderPause() {
     const paused = settings.pausedUntil > Date.now();
     $('pause').textContent = paused ? 'Resume' : 'Pause 1h';
@@ -121,7 +162,36 @@
     stage.setPet(true);
     $('name').value = settings.name === 'friend' ? '' : settings.name;
     $('pet').checked = settings.pet;
-    renderChars(); renderCharms(); renderReminders(); renderPause(); renderStat();
+    renderChars(); renderCharms(); renderReminders(); renderPause(); renderStat(); renderSchedules(); renderFocus();
+
+    $('sched-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const text = $('sched-text').value.trim(), time = $('sched-time').value;
+      if (!text || !time || settings.schedules.length >= 20) return;
+      settings.schedules.push({ id: 't' + Date.now().toString(36), text, time, repeat: $('sched-repeat').value, warn: Number($('sched-warn').value), on: true });
+      save(); renderSchedules();
+      $('sched-text').value = '';
+    });
+    $('focus-work').value = settings.focus.work; $('focus-rest').value = settings.focus.rest;
+    const focusChange = () => {
+      settings.focus = { work: Math.max(1, Math.min(180, Math.round(Number($('focus-work').value)) || 50)), rest: Math.max(1, Math.min(60, Math.round(Number($('focus-rest').value)) || 10)) };
+      $('focus-work').value = settings.focus.work; $('focus-rest').value = settings.focus.rest; save();
+    };
+    $('focus-work').addEventListener('change', focusChange); $('focus-rest').addEventListener('change', focusChange);
+    $('focus-toggle').addEventListener('click', async () => {
+      await api.runtime.sendMessage({ type: 'db:focus', on: !$('focus-toggle').dataset.on });
+      renderFocus();
+    });
+    $('snooze').value = String(settings.snooze);
+    $('snooze').addEventListener('change', () => { settings.snooze = Number($('snooze').value); save(); });
+    $('quiet-on').checked = settings.quiet.on; $('quiet-from').value = settings.quiet.from; $('quiet-to').value = settings.quiet.to;
+    const quietChange = () => { settings.quiet = { on: $('quiet-on').checked, from: $('quiet-from').value || '22:00', to: $('quiet-to').value || '08:00' }; save(); };
+    ['quiet-on', 'quiet-from', 'quiet-to'].forEach(id => $(id).addEventListener('change', quietChange));
+    $('summary-on').checked = settings.summary.on; $('summary-time').value = settings.summary.time;
+    const sumChange = () => { settings.summary = { on: $('summary-on').checked, time: $('summary-time').value || '18:00' }; save(); };
+    ['summary-on', 'summary-time'].forEach(id => $(id).addEventListener('change', sumChange));
+    $('effects').checked = settings.effects;
+    $('effects').addEventListener('change', () => { settings.effects = $('effects').checked; save(); });
 
     $('name').addEventListener('change', () => { settings.name = $('name').value.trim() || 'friend'; save(); });
     $('pet').addEventListener('change', () => { settings.pet = $('pet').checked; save(); });

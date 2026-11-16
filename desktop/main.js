@@ -2,6 +2,7 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage } = require('electron');
 const fs = require('fs');
 const path = require('path');
+require('./ui/engine.js');   // defines globalThis.DBEngine (shared reminder logic)
 require('./ui/defaults.js'); // defines globalThis.DB (shared with the browser extension)
 
 const CHARACTERS = [['mika', 'Mika'], ['arjun', 'Arjun'], ['zoe', 'Zoe']];
@@ -9,7 +10,6 @@ const CHARMS = [['none', 'None'], ['evileye', 'Evil eye'], ['lemon', 'Lemon & ch
 
 let overlay = null, settingsWin = null, tray = null;
 let store = { sync: {}, local: {} };
-let timers = {}, snoozes = {};
 const file = () => path.join(app.getPath('userData'), 'deskbuddy.json');
 
 function load() {
@@ -57,32 +57,29 @@ function openSettings() {
   settingsWin.on('closed', () => { settingsWin = null; });
 }
 
-function schedule() {
-  Object.values(timers).forEach(clearInterval);
-  timers = {};
+let ticker = null;
+function tick() {
   const s = settings();
-  Object.keys(DB.REMINDERS).forEach(id => {
-    const r = s.reminders[id];
-    if (r.on) timers[id] = setInterval(() => fire(id, false), Math.max(1, r.every) * 60000);
-  });
+  const res = DBEngine.tick(s, store.local.engine, Date.now(), store.local.stats, DB.REMINDERS);
+  store.local.engine = res.state;
+  if (res.settingsChanged) { store.sync.settings = s; if (settingsWin) settingsWin.reload(); }
+  persist();
+  if (res.payload && overlay) overlay.webContents.send('remind', res.payload);
 }
-function fire(id, force) {
-  const s = settings();
-  if (!force && (s.pausedUntil > Date.now() || !s.reminders[id] || !s.reminders[id].on)) return;
-  const payload = DB.reminderPayload(id, s);
-  if (payload && overlay) overlay.webContents.send('remind', payload);
+function fire(id) {
+  if (!DB.REMINDERS[id] || !overlay) return;
+  overlay.webContents.send('remind', DBEngine.intervalPayload(id, settings(), DB.REMINDERS));
 }
-function onAction(action, id) {
-  if (!DB.REMINDERS[id]) return;
-  if (action === 'done') {
-    const day = DB.today();
-    const st = store.local.stats && store.local.stats.day === day ? store.local.stats : { day, counts: {} };
-    st.counts[id] = (st.counts[id] || 0) + 1;
-    store.local.stats = st; persist(); buildTray();
-  } else {
-    clearTimeout(snoozes[id]);
-    snoozes[id] = setTimeout(() => fire(id, false), Math.max(1, settings().snooze) * 60000);
-  }
+function onAction(action, p) {
+  if (!p || typeof p.key !== 'string') return;
+  const res = DBEngine.act(settings(), store.local.engine, store.local.stats, p, String(action), Date.now());
+  store.local.engine = res.state; store.local.stats = res.stats;
+  persist(); buildTray();
+}
+function setFocus(on) {
+  store.local.engine = DBEngine.setFocus(settings(), store.local.engine, on, Date.now());
+  persist(); buildTray();
+  if (settingsWin) settingsWin.reload();
 }
 
 function buildTray() {
@@ -91,14 +88,16 @@ function buildTray() {
   const paused = s.pausedUntil > Date.now();
   const sips = store.local.stats && store.local.stats.day === DB.today() ? (store.local.stats.counts.water || 0) : 0;
   const login = app.getLoginItemSettings().openAtLogin;
+  const focusOn = !!(store.local.engine && store.local.engine.focus && store.local.engine.focus.on);
   tray.setToolTip('DeskBuddy');
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: sips ? sips + ' water check-in' + (sips === 1 ? '' : 's') + ' today' : 'No water check-ins yet today', enabled: false },
     { type: 'separator' },
-    { label: 'Try a reminder', submenu: Object.keys(DB.REMINDERS).map(id => ({ label: DB.REMINDERS[id].title, click: () => fire(id, true) })) },
+    { label: 'Try a reminder', submenu: Object.keys(DB.REMINDERS).map(id => ({ label: DB.REMINDERS[id].title, click: () => fire(id) })) },
     { label: 'Character', submenu: CHARACTERS.map(([id, label]) => ({ label, type: 'radio', checked: s.character === id, click: () => update(x => { x.character = id; }) })) },
     { label: 'Hanging charm', submenu: CHARMS.map(([id, label]) => ({ label, type: 'radio', checked: s.charm === id, click: () => update(x => { x.charm = id; }) })) },
     { label: 'Reminders', submenu: Object.keys(DB.REMINDERS).map(id => ({ label: DB.REMINDERS[id].title + ' (every ' + s.reminders[id].every + ' min)', type: 'checkbox', checked: s.reminders[id].on, click: () => update(x => { x.reminders[id].on = !x.reminders[id].on; }) })) },
+    { label: focusOn ? 'Stop focus timer' : 'Start focus timer (' + s.focus.work + ' / ' + s.focus.rest + ' min)', click: () => setFocus(!focusOn) },
     { label: 'Desk pet (buddy walks around)', type: 'checkbox', checked: s.pet, click: () => update(x => { x.pet = !x.pet; }) },
     { label: paused ? 'Resume reminders' : 'Pause reminders for 1 hour', click: () => update(x => { x.pausedUntil = paused ? 0 : Date.now() + 3600000; }) },
     { type: 'separator' },
@@ -110,7 +109,7 @@ function buildTray() {
 }
 
 function apply() {
-  schedule(); buildTray();
+  buildTray();
   if (overlay) overlay.webContents.send('settings', settings());
 }
 
@@ -121,9 +120,13 @@ ipcMain.handle('store:set', (e, area, obj) => {
   if (area === 'sync') { store.sync.settings = DB.merge(store.sync.settings); }
   persist(); apply();
 });
-ipcMain.handle('runtime:message', (e, msg) => { if (msg && msg.type === 'db:test' && DB.REMINDERS[msg.id]) fire(msg.id, true); return { ok: true }; });
+ipcMain.handle('runtime:message', (e, msg) => {
+  if (msg && msg.type === 'db:test') fire(msg.id);
+  else if (msg && msg.type === 'db:focus') { store.local.engine = DBEngine.setFocus(settings(), store.local.engine, !!msg.on, Date.now()); persist(); buildTray(); }
+  return { ok: true };
+});
 ipcMain.on('overlay:ready', () => { if (overlay) overlay.webContents.send('settings', settings()); });
-ipcMain.on('overlay:action', (e, action, id) => onAction(String(action), String(id)));
+ipcMain.on('overlay:action', (e, action, p) => onAction(action, p));
 ipcMain.on('overlay:ignore', (e, ignore) => { if (overlay) overlay.setIgnoreMouseEvents(!!ignore, { forward: true }); });
 ipcMain.on('overlay:charm-moved', (e, pos) => {
   if (!pos || typeof pos.x !== 'number') return;
@@ -143,11 +146,12 @@ else {
     tray.on('click', () => tray.popUpContextMenu());
     createOverlay();
     apply();
+    ticker = setInterval(tick, 20000);
     screen.on('display-metrics-changed', fitOverlay);
     screen.on('display-added', fitOverlay);
     screen.on('display-removed', fitOverlay);
     if (!store.local.welcomed) { store.local.welcomed = true; persist(); openSettings(); }
-    if (process.env.DESKBUDDY_SMOKE) require('./smoke.js')({ overlay: () => overlay, settingsWin: () => settingsWin, fire, update, openSettings, app });
+    if (process.env.DESKBUDDY_SMOKE) require('./smoke.js')({ overlay: () => overlay, settingsWin: () => settingsWin, fire, update, openSettings, app, tick, store: () => store });
   });
   app.on('window-all-closed', () => { /* keep running in the tray */ });
 }
