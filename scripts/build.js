@@ -18,6 +18,16 @@ for (const target of ['chrome', 'firefox']) {
 
 fs.copyFileSync(core, path.join(root, 'vscode', 'media', 'buddy-core.js'));
 
+// Desktop app: reuses the core, the settings model and the popup as its settings window.
+const ui = path.join(root, 'desktop', 'ui');
+fs.rmSync(ui, { recursive: true, force: true });
+fs.mkdirSync(path.join(ui, 'popup'), { recursive: true });
+fs.copyFileSync(core, path.join(ui, 'buddy-core.js'));
+fs.copyFileSync(path.join(root, 'browser', 'defaults.js'), path.join(ui, 'defaults.js'));
+for (const f of ['popup.html', 'popup.css', 'popup.js']) fs.copyFileSync(path.join(root, 'browser', 'popup', f), path.join(ui, 'popup', f));
+fs.mkdirSync(path.join(root, 'desktop', 'build'), { recursive: true });
+fs.copyFileSync(path.join(root, 'desktop', 'icon-source.png'), path.join(root, 'desktop', 'build', 'icon.png'));
+
 const demo = fs.readFileSync(path.join(root, 'demo', 'demo.src.html'), 'utf8')
   .replace('/*__CORE__*/', () => fs.readFileSync(core, 'utf8'));
 fs.writeFileSync(path.join(dist, 'demo.html'), demo);

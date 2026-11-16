@@ -2,3 +2,6 @@ dist/
 node_modules/
 *.vsix
 vscode/media/buddy-core.js
+desktop/ui/
+desktop/build/
+desktop/release/

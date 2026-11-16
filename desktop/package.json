@@ -1,0 +1,30 @@
+{
+  "name": "deskbuddy-desktop",
+  "productName": "DeskBuddy",
+  "version": "1.1.0",
+  "description": "A friendly animated character that lives on your desktop and reminds you to drink water, take breaks and stretch.",
+  "author": "Zero to Deploy <support@zerotodeploy.in>",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "prestart": "node ../scripts/build.js",
+    "start": "electron .",
+    "dist:mac": "node ../scripts/build.js && electron-builder --mac",
+    "dist:win": "node ../scripts/build.js && electron-builder --win",
+    "dist:linux": "node ../scripts/build.js && electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "in.zerotodeploy.deskbuddy",
+    "productName": "DeskBuddy",
+    "files": ["main.js", "preload-overlay.js", "preload-settings.js", "overlay.html", "overlay.js", "ui/**/*", "build/icon.png"],
+    "directories": { "output": "release" },
+    "mac": { "category": "public.app-category.productivity", "target": ["dmg"], "identity": "-", "hardenedRuntime": false, "extendInfo": { "LSUIElement": true } },
+    "win": { "target": ["nsis"] },
+    "nsis": { "oneClick": true, "perMachine": false },
+    "linux": { "target": ["AppImage"], "category": "Utility" }
+  }
+}

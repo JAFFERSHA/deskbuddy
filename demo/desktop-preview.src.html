@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DeskBuddy desktop preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: one column; a mock computer screen is the centrepiece, with the download steps under it. Single dark theme by choice. */
+  --bg:#10131a; --panel:#191e29; --line:#2a3142; --ink:#e9edf5; --mute:#98a2b8; --gold:#f2b632; --teal:#2bb3a3;
+  --display:"Bricolage Grotesque","Trebuchet MS",sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);padding:28px 16px 56px}
+main{max-width:860px;margin:0 auto;display:grid;gap:22px}
+h1{font:700 clamp(26px,5vw,38px)/1.1 var(--display);margin:0;text-wrap:balance}
+h2{font:600 20px/1.2 var(--display);margin:0 0 10px;text-wrap:balance}
+p{margin:0;max-width:65ch}
+.lede{color:var(--mute)}
+.seg{display:inline-flex;gap:4px;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;justify-self:start}
+.seg button{font:600 15px var(--body);color:var(--mute);background:transparent;border:0;border-radius:9px;padding:8px 18px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--gold);color:#231a00}
+.screen{position:relative;aspect-ratio:16/10;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:radial-gradient(120% 90% at 20% 10%,#3b5fa8 0%,#243a73 45%,#131c3a 100%);box-shadow:0 20px 50px rgba(0,0,0,.45);font-size:clamp(9px,1.5vw,13px)}
+.screen.win{background:radial-gradient(120% 90% at 80% 20%,#2d8f86 0%,#1d5a66 45%,#0f2530 100%)}
+.bar{position:absolute;top:0;left:0;right:0;height:2.3em;display:flex;align-items:center;justify-content:space-between;padding:0 1em;background:rgba(18,22,34,.72);backdrop-filter:blur(8px);color:#e9edf5;z-index:5}
+.bar .l{display:flex;gap:1.2em}.bar .l b{font-weight:600}
+.r{display:flex;align-items:center;gap:.8em}
+.win .bar{display:none}
+.tray{width:2em;height:2em;border-radius:.5em;border:0;padding:0;background:rgba(255,255,255,.14);cursor:pointer;overflow:hidden;display:grid;place-items:start center}
+.tray svg{width:2.6em;height:auto;margin-top:-.15em}
+.tray:hover{background:rgba(255,255,255,.26)}
+.app{position:absolute;left:22%;right:14%;top:17%;bottom:24%;border-radius:.9em;background:#171b25;border:1px solid rgba(255,255,255,.08);box-shadow:0 12px 30px rgba(0,0,0,.4);overflow:hidden}
+.app i{display:block;height:2em;background:#202635;border-bottom:1px solid rgba(255,255,255,.06)}
+.app span{display:block;height:.55em;border-radius:.3em;background:#2c3447;margin:1em 1.4em 0}
+.app span:nth-child(3){width:46%;background:#35507f}.app span:nth-child(4){width:62%}.app span:nth-child(5){width:38%;background:#2b6f68}.app span:nth-child(6){width:54%}.app span:nth-child(7){width:30%}
+.area{position:absolute;left:0;right:0;top:2.3em;bottom:4.6em;z-index:4;pointer-events:none}
+.win .area{top:0;bottom:3.2em}
+.dock{position:absolute;left:50%;bottom:.6em;transform:translateX(-50%);display:flex;gap:.6em;padding:.55em .7em;border-radius:1.2em;background:rgba(255,255,255,.16);backdrop-filter:blur(8px);z-index:3}
+.dock i,.task i{width:2.6em;height:2.6em;border-radius:.7em;display:block}
+.dock i:nth-child(1),.task i:nth-child(1){background:#4f8df7}.dock i:nth-child(2),.task i:nth-child(2){background:#f2793a}.dock i:nth-child(3),.task i:nth-child(3){background:#8a63f0}.dock i:nth-child(4),.task i:nth-child(4){background:#2bb3a3}.dock i:nth-child(5),.task i:nth-child(5){background:#e5484d}.dock i:nth-child(6){background:#d9dde8}
+.win .dock{display:none}
+.task{display:none;position:absolute;left:0;right:0;bottom:0;height:3.2em;align-items:center;justify-content:center;gap:.5em;background:rgba(14,22,28,.82);backdrop-filter:blur(8px);z-index:5}
+.task i{width:2em;height:2em;border-radius:.45em}
+.task .r{position:absolute;right:1em;top:0;bottom:0;color:#e9edf5}
+.win .task{display:flex}
+.menu{position:absolute;right:.8em;top:2.8em;width:min(21em,calc(100% - 1.6em));max-height:calc(100% - 6em);overflow:auto;background:#1c2130;border:1px solid var(--line);border-radius:.9em;box-shadow:0 14px 34px rgba(0,0,0,.5);padding:.8em;z-index:9;font-size:clamp(11px,1.5vw,13px);display:grid;gap:.7em}
+.menu[hidden]{display:none}
+.win .menu{top:auto;bottom:3.7em}
+.menu h3{font:600 .8em var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--mute);margin:0 0 .4em}
+.chips{display:flex;flex-wrap:wrap;gap:.4em}
+.chips button{font:500 1em var(--body);color:var(--ink);background:#262d3f;border:1px solid var(--line);border-radius:999px;padding:.35em .8em;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:#04201c}
+.menu label{display:flex;align-items:center;gap:.6em;cursor:pointer}
+.menu .dim{color:var(--mute);border-top:1px solid var(--line);padding-top:.6em}
+.fx button{font-size:15px;padding:8px 16px}
+.hint{font-size:14px;color:var(--mute)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.card ol{margin:0;padding-left:20px;display:grid;gap:6px}
+.file{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#141926;font:500 14px ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+.file small{font:400 12px var(--body);color:var(--mute);white-space:nowrap}
+.files{display:grid;gap:8px;margin:10px 0 0}
+.tag{display:inline-block;font:600 11px var(--body);letter-spacing:.06em;text-transform:uppercase;color:#231a00;background:var(--gold);border-radius:6px;padding:2px 7px;margin-bottom:8px}
+[data-os]{display:none}
+body[data-view="mac"] [data-os="mac"],body[data-view="win"] [data-os="win"]{display:block}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+</style>
+</head>
+<body data-view="mac">
+<main>
+  <header style="display:grid;gap:8px">
+    <h1>How DeskBuddy looks on the desktop</h1>
+    <p class="lede">A working preview of the desktop app. The buddy walks along the bottom of the screen, on top of whatever app is open, and the charm hangs from the top. Drag the charm to move it.</p>
+  </header>
+
+  <div class="seg" role="group" aria-label="Choose computer">
+    <button type="button" id="tab-mac" aria-pressed="true">Mac</button>
+    <button type="button" id="tab-win" aria-pressed="false">Windows</button>
+  </div>
+
+  <div class="screen" id="screen">
+    <div class="bar"><div class="l"><b>Editor</b><span>File</span><span>Edit</span><span>View</span></div><div class="r"><button class="tray" id="tray-mac" type="button" aria-label="Open DeskBuddy menu"></button><span>10:12</span></div></div>
+    <div class="app" aria-hidden="true"><i></i><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="area" id="area"></div>
+    <div class="dock" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="task"><i></i><i></i><i></i><i></i><i></i><div class="r"><button class="tray" id="tray-win" type="button" aria-label="Open DeskBuddy menu"></button><span>10:12</span></div></div>
+    <div class="menu" id="menu" hidden>
+      <div><h3>Try a reminder</h3><div class="chips" id="m-rem"></div></div>
+      <div><h3>Character</h3><div class="chips" id="m-char"></div></div>
+      <div><h3>Hanging charm</h3><div class="chips" id="m-charm"></div></div>
+      <label><input type="checkbox" id="m-pet" checked> Desk pet (buddy walks around)</label>
+      <div class="dim">Also in the real menu: Reminders on/off, Pause for 1 hour, Settings, Start at login, Quit.</div>
+    </div>
+  </div>
+  <section class="card">
+    <h2>Reminder animations</h2>
+    <p style="color:var(--mute);margin-bottom:12px">Tap one to play it on the screen above. These are new ideas, not in the extension yet.</p>
+    <div class="chips fx" id="fx"></div>
+  </section>
+  <p class="hint"><span data-os="mac">On a Mac the app has no Dock icon. Its menu is the small buddy icon in the menu bar at the top right. Click it above to try the menu.</span><span data-os="win">On Windows the app sits in the system tray at the bottom right, next to the clock. Click the buddy icon above to try the menu.</span></p>
+
+  <section>
+    <h2>How people get it from GitHub</h2>
+    <div class="cards">
+      <div class="card">
+        <span class="tag">Example</span>
+        <p>Your GitHub page gets a Releases section. Each release lists the files to download, like this:</p>
+        <div class="files">
+          <div class="file"><span>DeskBuddy-1.1.0-arm64.dmg</span><small>Mac</small></div>
+          <div class="file"><span>DeskBuddy-Setup-1.1.0.exe</span><small>Windows</small></div>
+        </div>
+      </div>
+      <div class="card" data-os="mac">
+        <h2>First run on a Mac</h2>
+        <ol>
+          <li>Download the .dmg file and open it.</li>
+          <li>Drag DeskBuddy into the Applications folder.</li>
+          <li>Open it. macOS warns that it is from an unidentified developer.</li>
+          <li>Go to System Settings, Privacy &amp; Security, and choose Open Anyway. This is needed once.</li>
+          <li>The buddy icon appears in the menu bar and the buddy walks in.</li>
+        </ol>
+      </div>
+      <div class="card" data-os="win">
+        <h2>First run on Windows</h2>
+        <ol>
+          <li>Download the .exe file and run it.</li>
+          <li>Windows may show a blue "unknown publisher" box. Choose More info, then Run anyway.</li>
+          <li>It installs in a few seconds and starts by itself.</li>
+          <li>The buddy icon appears in the tray next to the clock and the buddy walks in.</li>
+        </ol>
+        <p style="margin-top:10px;color:var(--mute);font-size:14px">Publishing through the Microsoft Store instead removes the warning, and is free.</p>
+      </div>
+    </div>
+  </section>
+</main>
+<script>/*__CORE__*/</script>
+<script>
+(function () {
+  var style = document.createElement('style');
+  style.textContent = DeskBuddy.CSS;
+  document.head.appendChild(style);
+  var screen = document.getElementById('screen'), area = document.getElementById('area'), menu = document.getElementById('menu');
+  var state = { view: 'mac', character: 'mika', charm: 'evileye', pet: true, pos: { x: 0.2, length: null } };
+  var stage = null, charm = null, fx = null;
+  DeskBuddy.render(document.getElementById('tray-mac'), 'mika');
+  DeskBuddy.render(document.getElementById('tray-win'), 'mika');
+
+  function build() {
+    if (stage) stage.destroy();
+    if (charm) charm.destroy();
+    charm = null;
+    var w = screen.clientWidth, h = area.clientHeight;
+    var size = Math.round(Math.max(34, Math.min(84, w * 0.09)));
+    if (fx) fx.destroy();
+    fx = DeskBuddy.createFx({ mount: area });
+    stage = DeskBuddy.createStage({ mount: area, size: size, character: state.character });
+    stage.setPet(state.pet);
+    if (state.charm !== 'none') {
+      charm = DeskBuddy.createCharm({
+        mount: area, charm: state.charm, size: Math.round(size * 0.72), x: state.pos.x,
+        length: state.pos.length === null ? Math.round(h * 0.1) : Math.min(state.pos.length, h * 0.6),
+        onMove: function (p) { state.pos = p; }
+      });
+    }
+  }
+  function chips(id, items, current, pick) {
+    var box = document.getElementById(id);
+    box.textContent = '';
+    items.forEach(function (it) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.textContent = it[1];
+      if (current !== undefined) b.setAttribute('aria-pressed', String(it[0] === current));
+      b.addEventListener('click', function () { pick(it[0]); });
+      box.appendChild(b);
+    });
+  }
+  var REM = { water: ['Water', 'Hey friend, did you drink water?', 'Yes!', 'Hydrated. Nice one!'], rest: ['Break', 'Time for a short break. Step away for five minutes.', 'Taking it', 'Enjoy the break!'], stretch: ['Stretch', 'Stretch time. Roll your shoulders and stand up.', 'Stretched', 'Feels better, right?'], eyes: ['Eye rest', 'Eye rest: look at something far away for 20 seconds.', 'Done', 'Your eyes say thanks!'] };
+  function remind(id) {
+    var r = REM[id];
+    menu.hidden = true;
+    if (charm) charm.kick(2.4);
+    stage.remind({ id: id, kind: id, text: r[1], cheer: r[3], actions: [{ id: 'done', label: r[2], primary: true }, { id: 'later', label: 'Remind me later' }] });
+  }
+  function renderMenu() {
+    chips('m-rem', Object.keys(REM).map(function (k) { return [k, REM[k][0]]; }), undefined, remind);
+    chips('m-char', [['mika', 'Mika'], ['arjun', 'Arjun'], ['zoe', 'Zoe']], state.character, function (id) { state.character = id; stage.setCharacter(id); stage.poke(); renderMenu(); });
+    chips('m-charm', [['none', 'None']].concat(Object.keys(DeskBuddy.CHARMS).map(function (k) { return [k, DeskBuddy.CHARMS[k].name]; })), state.charm, function (id) { state.charm = id; build(); renderMenu(); });
+  }
+  function setView(v) {
+    state.view = v;
+    document.body.dataset.view = v;
+    screen.classList.toggle('win', v === 'win');
+    document.getElementById('tab-mac').setAttribute('aria-pressed', String(v === 'mac'));
+    document.getElementById('tab-win').setAttribute('aria-pressed', String(v === 'win'));
+    menu.hidden = true;
+    build();
+  }
+  document.getElementById('tab-mac').addEventListener('click', function () { setView('mac'); });
+  document.getElementById('tab-win').addEventListener('click', function () { setView('win'); });
+  ['tray-mac', 'tray-win'].forEach(function (id) { document.getElementById(id).addEventListener('click', function () { menu.hidden = !menu.hidden; }); });
+  document.getElementById('m-pet').addEventListener('change', function (e) { state.pet = e.target.checked; stage.setPet(state.pet); });
+  var t; window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(build, 200); });
+  var FXDEMO = { drop: ['Did you drink water?', 0.3], rocket: ['Break time!', 0.42], balloon: ['Time to stretch', 0.6], peek: ['Rest your eyes for 20 seconds', 0.7], confetti: ['Nice one!', 0.5] };
+  chips('fx', Object.keys(DeskBuddy.FX).map(function (k) { return [k, DeskBuddy.FX[k]]; }), undefined, function (k) {
+    menu.hidden = true;
+    screen.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    fx.play(k, { text: FXDEMO[k][0], x: FXDEMO[k][1], character: state.character });
+  });
+  renderMenu(); build();
+  setTimeout(function () { remind('water'); }, 900);
+})();
+</script>
+</body>
+</html>

@@ -281,6 +281,156 @@
     };
   }
 
+
+  /* ---- Reminder effects: short one-off animations (water drop, rocket, balloon, peek, confetti) ---- */
+  var FX = { drop: 'Water drop', rocket: 'Rocket', balloon: 'Balloon', peek: 'Peek', confetti: 'Confetti' };
+  var FX_SVG = {
+    rocket: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 112"><g class="db-flame"><path d="M21 76 Q30 112 39 76 Z" fill="#f2b632"/><path d="M26 76 Q30 98 34 76 Z" fill="#fff3c4"/></g><path d="M16 50 L3 78 L17 70 Z" fill="#e5484d"/><path d="M44 50 L57 78 L43 70 Z" fill="#e5484d"/><path d="M30 4 C45 20 47 46 44 72 H16 C13 46 15 20 30 4 Z" fill="#f4f6fb"/><path d="M30 4 C37 11 40 18 42 26 H18 C20 18 23 11 30 4 Z" fill="#e5484d"/><circle cx="30" cy="42" r="8" fill="#4fc3f0" stroke="#2d3550" stroke-width="3"/><rect x="21" y="71" width="18" height="6" rx="2" fill="#9aa3b5"/></svg>',
+    drop: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 58"><path d="M20 2 C30 21 38 29 38 39 A18 18 0 0 1 2 39 C2 29 10 21 20 2 Z" fill="#4fc3f0"/><path d="M11 38 a9 9 0 0 0 7 9" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/></svg>',
+    balloon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 124"><path d="M30 70 Q24 88 31 100 Q37 110 30 122" stroke="#c9ccd6" stroke-width="1.6" fill="none"/><ellipse cx="30" cy="34" rx="26" ry="32" fill="#e5484d"/><path d="M25 64 L35 64 L30 71 Z" fill="#c2363a"/><ellipse cx="20" cy="22" rx="6" ry="9" fill="#fff" opacity=".35" transform="rotate(-20 20 22)"/></svg>'
+  };
+
+  /* opts: mount, fixed. play(kind, {text, x (0..1), character}) returns a promise that resolves when it ends. */
+  function createFx(opts) {
+    var doc = (opts.mount.ownerDocument || document), win = doc.defaultView;
+    var layer = doc.createElement('div');
+    layer.className = 'db-fx ' + (opts.fixed ? 'db-fixed' : 'db-abs');
+    opts.mount.appendChild(layer);
+    var calm = win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function dims() { return { W: layer.clientWidth || win.innerWidth, H: layer.clientHeight || win.innerHeight }; }
+    function unit() { var d = dims(); return Math.max(26, Math.min(64, d.W * 0.07)); }
+    function add(markup, w, cls) {
+      var el = doc.createElement('div');
+      el.className = 'db-fx-item' + (cls ? ' ' + cls : '');
+      el.style.width = w + 'px';
+      if (markup) setMarkup(el, markup);
+      layer.appendChild(el);
+      return el;
+    }
+    function done(anim) { return new Promise(function (res) { anim.onfinish = res; anim.oncancel = res; }); }
+    function pause(ms) { return new Promise(function (res) { win.setTimeout(res, ms); }); }
+    function say(text, cx, bottom, ms) {
+      if (!text) return Promise.resolve();
+      var d = dims();
+      var b = doc.createElement('div');
+      b.className = 'db-bubble db-fx-say';
+      var p = doc.createElement('p'); p.className = 'db-bubble-text'; p.textContent = text;
+      b.appendChild(p); layer.appendChild(b);
+      var bw = b.offsetWidth;
+      b.style.left = Math.round(Math.max(6, Math.min(d.W - bw - 6, cx - bw / 2))) + 'px';
+      b.style.bottom = Math.round(Math.max(6, Math.min(d.H - b.offsetHeight - 6, bottom))) + 'px';
+      return pause(ms || 2600).then(function () { b.remove(); });
+    }
+    function burst(cx, cy, n, colors, spread, life) {
+      var all = [];
+      for (var i = 0; i < n; i++) {
+        var s = 4 + Math.random() * 6;
+        var el = doc.createElement('div');
+        el.className = 'db-fx-item db-fx-bit';
+        el.style.width = s + 'px'; el.style.height = (colors.length > 1 ? s * (0.5 + Math.random()) : s) + 'px';
+        el.style.background = colors[i % colors.length];
+        if (colors.length === 1 || Math.random() < 0.4) el.style.borderRadius = '50%';
+        el.style.left = cx + 'px'; el.style.top = cy + 'px';
+        layer.appendChild(el);
+        var a = Math.random() * Math.PI * 2, v = spread * (0.35 + Math.random() * 0.65);
+        var dx = Math.cos(a) * v, up = -Math.abs(Math.sin(a)) * v - spread * 0.3, rot = (Math.random() * 720 - 360);
+        var an = el.animate([
+          { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+          { transform: 'translate(' + dx * 0.6 + 'px,' + up + 'px) rotate(' + rot * 0.5 + 'deg)', opacity: 1, offset: 0.35 },
+          { transform: 'translate(' + dx + 'px,' + (up + spread * 1.9) + 'px) rotate(' + rot + 'deg)', opacity: 0 }
+        ], { duration: life * (0.75 + Math.random() * 0.5), easing: 'cubic-bezier(.2,.6,.4,1)', fill: 'forwards' });
+        all.push(done(an).then((function (e) { return function () { e.remove(); }; })(el)));
+      }
+      return Promise.all(all);
+    }
+    var CONFETTI = ['#f2b632', '#e5484d', '#4f8df7', '#2bb3a3', '#8a63f0', '#ff8fb0'];
+
+    var effects = {
+      drop: function (o) {
+        var d = dims(), u = unit(), x = d.W * o.x, w = u * 0.55, h = w * 58 / 40;
+        var el = add(FX_SVG.drop, w);
+        el.style.left = (x - w / 2) + 'px'; el.style.top = (-h) + 'px';
+        return done(el.animate([{ transform: 'translateY(0) scaleY(1.15)' }, { transform: 'translateY(' + (d.H + h * 0.4) + 'px) scaleY(1.3)' }], { duration: calm ? 1 : 750, easing: 'cubic-bezier(.5,0,.9,.6)', fill: 'forwards' })).then(function () {
+          el.remove();
+          var ring = add('', u * 2.4, 'db-fx-ring');
+          ring.style.left = (x - u * 1.2) + 'px'; ring.style.top = (d.H - u * 0.25) + 'px'; ring.style.height = u * 0.5 + 'px';
+          done(ring.animate([{ transform: 'scale(.2)', opacity: .9 }, { transform: 'scale(1)', opacity: 0 }], { duration: 650, easing: 'ease-out' })).then(function () { ring.remove(); });
+          burst(x, d.H - 4, calm ? 0 : 12, ['#4fc3f0'], u * 1.3, 800);
+          return say(o.text, x, u * 1.2);
+        });
+      },
+      rocket: function (o) {
+        var d = dims(), u = unit(), x = d.W * o.x, w = u * 0.9, h = w * 112 / 60;
+        var el = add(FX_SVG.rocket, w);
+        el.style.left = (x - w / 2) + 'px'; el.style.top = d.H + 'px';
+        var puffs = calm ? null : win.setInterval(function () {
+          var r = el.getBoundingClientRect(), l = layer.getBoundingClientRect();
+          var pf = add('', u * 0.5, 'db-fx-puff');
+          pf.style.height = u * 0.5 + 'px';
+          pf.style.left = (r.left - l.left + r.width / 2 - u * 0.25 + (Math.random() - 0.5) * u * 0.3) + 'px';
+          pf.style.top = (r.bottom - l.top - u * 0.3) + 'px';
+          done(pf.animate([{ transform: 'scale(.5)', opacity: .8 }, { transform: 'scale(2.4) translateY(' + u * 0.4 + 'px)', opacity: 0 }], { duration: 900, easing: 'ease-out' })).then(function () { pf.remove(); });
+        }, 55);
+        var said = pause(calm ? 0 : 500).then(function () { return say(o.text, x + u * 2.2, d.H * 0.42); });
+        var fly = done(el.animate([
+          { transform: 'translate(0,0)' }, { transform: 'translate(-2px,' + (-h * 0.3) + 'px)', offset: 0.12 }, { transform: 'translate(2px,' + (-h * 0.7) + 'px)', offset: 0.22 },
+          { transform: 'translate(0,' + (-(d.H + h * 1.4)) + 'px)' }
+        ], { duration: calm ? 1 : 1500, easing: 'cubic-bezier(.6,0,.9,.5)', fill: 'forwards' })).then(function () { if (puffs) win.clearInterval(puffs); el.remove(); });
+        return Promise.all([fly, said]);
+      },
+      balloon: function (o) {
+        var d = dims(), u = unit(), x = d.W * o.x, w = u * 0.95, h = w * 124 / 60;
+        var el = add(FX_SVG.balloon, w, 'db-fx-click');
+        el.style.left = (x - w / 2) + 'px'; el.style.top = d.H + 'px';
+        var rise = Math.min(d.H * 0.62, d.H - h * 0.2) + h;
+        var popped = false, finish;
+        var whenDone = new Promise(function (res) { finish = res; });
+        function pop() {
+          if (popped) return; popped = true;
+          var r = el.getBoundingClientRect(), l = layer.getBoundingClientRect();
+          el.remove();
+          burst(r.left - l.left + r.width / 2, r.top - l.top + r.width * 0.55, calm ? 0 : 26, CONFETTI, u * 1.6, 1100).then(finish);
+          if (calm) finish();
+        }
+        el.addEventListener('click', pop);
+        done(el.animate([{ transform: 'translate(0,0) rotate(-4deg)' }, { transform: 'translate(' + u * 0.3 + 'px,' + (-rise * 0.5) + 'px) rotate(4deg)' }, { transform: 'translate(0,' + (-rise) + 'px) rotate(-3deg)' }], { duration: calm ? 1 : 2200, easing: 'ease-out', fill: 'forwards' })).then(function () {
+          if (popped) return;
+          el.animate([{ transform: 'translate(0,' + (-rise) + 'px) rotate(-3deg)' }, { transform: 'translate(0,' + (-rise - u * 0.25) + 'px) rotate(3deg)' }], { duration: 1300, direction: 'alternate', iterations: Infinity, easing: 'ease-in-out' });
+          say(o.text ? o.text + ' (click the balloon)' : '', x, d.H - rise + h + 6 > d.H * 0.5 ? u * 0.4 : d.H - rise - 4, 4200).then(function () {
+            if (popped) return;
+            popped = true;
+            done(el.animate([{ transform: 'translate(0,' + (-rise) + 'px)' }, { transform: 'translate(0,' + (-(d.H + h * 2)) + 'px)' }], { duration: 1400, easing: 'ease-in', fill: 'forwards' })).then(function () { el.remove(); finish(); });
+          });
+        });
+        return whenDone;
+      },
+      peek: function (o) {
+        var d = dims(), u = unit(), w = u * 1.5, h = w * 200 / 120, x = d.W * o.x;
+        var el = add(svg(o.character || 'mika'), w, 'db-sprite is-wave');
+        el.style.left = (x - w / 2) + 'px'; el.style.top = d.H + 'px';
+        var up = h * 0.58;
+        return done(el.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(' + (-up) + 'px)' }], { duration: calm ? 1 : 420, easing: 'cubic-bezier(.2,1.3,.4,1)', fill: 'forwards' }))
+          .then(function () { return say(o.text, x, up + 8, 2400); })
+          .then(function () { return done(el.animate([{ transform: 'translateY(' + (-up) + 'px)' }, { transform: 'translateY(0)' }], { duration: calm ? 1 : 300, easing: 'ease-in', fill: 'forwards' })); })
+          .then(function () { el.remove(); });
+      },
+      confetti: function (o) {
+        var d = dims(), u = unit();
+        var said = say(o.text, d.W * o.x, d.H * 0.45, 1800);
+        return Promise.all([burst(d.W * o.x, d.H * 0.6, calm ? 0 : 46, CONFETTI, u * 3.2, 1500), said]);
+      }
+    };
+    return {
+      el: layer,
+      play: function (kind, o) {
+        o = o || {};
+        if (typeof o.x !== 'number') o.x = 0.5;
+        return effects[kind] ? effects[kind](o) : Promise.resolve();
+      },
+      destroy: function () { layer.remove(); }
+    };
+  }
+
   /* Builds the character as real SVG nodes and puts it in el. */
   function render(el, id) {
     var doc = el.ownerDocument;
@@ -309,6 +459,16 @@
     '.db-charm-body.is-drag{cursor:grabbing}',
     '.db-charm-body svg{pointer-events:none;display:block;width:100%;height:auto;overflow:visible}',
     '.db-charm-body:hover .db-close{opacity:.9}.db-charm-body .db-close{top:-8px;right:-12px}',
+    '.db-fx{left:0;top:0;right:0;bottom:0;pointer-events:none;overflow:hidden}',
+    '.db-fx.db-fixed{position:fixed;z-index:2147483644}.db-fx.db-abs{position:absolute}',
+    '.db-fx-item{position:absolute;will-change:transform}.db-fx-item svg{display:block;width:100%;height:auto;overflow:visible}',
+    '.db-fx-click{pointer-events:auto;cursor:pointer}',
+    '.db-fx-bit{border-radius:2px}',
+    '.db-fx-puff{border-radius:50%;background:#e9edf5}',
+    '.db-fx-ring{border-radius:50%;border:2px solid #4fc3f0}',
+    '.db-fx-say{pointer-events:none}',
+    '.db-flame{transform-origin:30px 76px;animation:db-flame .12s ease-in-out infinite alternate}',
+    '@keyframes db-flame{from{transform:scaleY(.75)}to{transform:scaleY(1.15)}}',
     '.db-leg-l{transform-origin:51.5px 128px}.db-leg-r{transform-origin:68.5px 128px}',
     '.db-arm-l{transform-origin:33px 87px}.db-arm-r{transform-origin:87px 87px}',
     '.db-head{transform-origin:60px 74px}.db-all{transform-origin:60px 184px}',
@@ -550,5 +710,5 @@
     return api;
   }
 
-  root.DeskBuddy = { CHARACTERS: CHARACTERS, CHARMS: CHARMS, svg: svg, charmSvg: charmSvg, render: render, renderCharm: function (el, id) { return setMarkup(el, charmSvg(id)); }, CSS: CSS, createStage: createStage, createCharm: createCharm };
+  root.DeskBuddy = { CHARACTERS: CHARACTERS, CHARMS: CHARMS, svg: svg, charmSvg: charmSvg, render: render, renderCharm: function (el, id) { return setMarkup(el, charmSvg(id)); }, CSS: CSS, createStage: createStage, createCharm: createCharm, FX: FX, createFx: createFx };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
