@@ -5,6 +5,10 @@ const root = path.join(__dirname, '..'), dist = path.join(root, 'dist');
 const core = path.join(root, 'shared', 'buddy-core.js');
 const engine = path.join(root, 'shared', 'engine.js');
 
+// `--desktop` prepares only the desktop app's shared files (used by its npm scripts and by CI on Windows, where `zip` is missing).
+const desktopOnly = process.argv.includes('--desktop');
+
+if (!desktopOnly) {
 fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(dist, { recursive: true });
 
@@ -20,6 +24,7 @@ for (const target of ['chrome', 'firefox']) {
 
 fs.copyFileSync(core, path.join(root, 'vscode', 'media', 'buddy-core.js'));
 fs.copyFileSync(engine, path.join(root, 'vscode', 'engine.js'));
+}
 
 // Desktop app: reuses the core, the settings model and the popup as its settings window.
 const ui = path.join(root, 'desktop', 'ui');
@@ -32,7 +37,13 @@ for (const f of ['popup.html', 'popup.css', 'popup.js']) fs.copyFileSync(path.jo
 fs.mkdirSync(path.join(root, 'desktop', 'build'), { recursive: true });
 fs.copyFileSync(path.join(root, 'desktop', 'icon-source.png'), path.join(root, 'desktop', 'build', 'icon.png'));
 
+if (!desktopOnly) {
 const demo = fs.readFileSync(path.join(root, 'demo', 'demo.src.html'), 'utf8')
   .replace('/*__CORE__*/', () => fs.readFileSync(core, 'utf8'));
 fs.writeFileSync(path.join(dist, 'demo.html'), demo);
+for (const page of ['desktop-preview']) {
+  const src = fs.readFileSync(path.join(root, 'demo', page + '.src.html'), 'utf8').replace('/*__CORE__*/', () => fs.readFileSync(core, 'utf8'));
+  fs.writeFileSync(path.join(dist, page + '.html'), src);
+}
 console.log('Built:', fs.readdirSync(dist).join(', '));
+} else console.log('Desktop files prepared.');

@@ -43,6 +43,8 @@ npm run dist:mac     # build a .dmg (on a Mac)
 npm run dist:win     # build a Windows installer
 ```
 
+Pushing a tag such as `v1.2.0` runs `.github/workflows/desktop-release.yml`, which builds the Mac, Windows and Linux installers and attaches them to a GitHub Release.
+
 The Mac build is ad-hoc signed, so macOS shows an "unidentified developer" warning; open it once through System Settings > Privacy & Security > Open Anyway.
 
 ## Try it without a store

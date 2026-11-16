@@ -7,11 +7,11 @@
   "license": "MIT",
   "main": "main.js",
   "scripts": {
-    "prestart": "node ../scripts/build.js",
+    "prestart": "node ../scripts/build.js --desktop",
     "start": "electron .",
-    "dist:mac": "node ../scripts/build.js && electron-builder --mac",
-    "dist:win": "node ../scripts/build.js && electron-builder --win",
-    "dist:linux": "node ../scripts/build.js && electron-builder --linux"
+    "dist:mac": "node ../scripts/build.js --desktop && electron-builder --mac",
+    "dist:win": "node ../scripts/build.js --desktop && electron-builder --win",
+    "dist:linux": "node ../scripts/build.js --desktop && electron-builder --linux"
   },
   "devDependencies": {
     "electron": "^33.0.0",
