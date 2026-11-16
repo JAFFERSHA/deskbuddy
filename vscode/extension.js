@@ -176,6 +176,7 @@ function activate(context) {
       vscode.window.setStatusBarMessage(pausedUntil ? 'DeskBuddy paused for 1 hour' : 'DeskBuddy resumed', 3000);
     }),
     vscode.commands.registerCommand('deskbuddy.showPro', showPro),
+    vscode.commands.registerCommand('deskbuddy.openSettings', () => vscode.commands.executeCommand('workbench.action.openSettings', '@ext:jaffersha.deskbuddy')),
     vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration('deskbuddy')) { schedule(); pushSettings(); } }),
     { dispose: () => { Object.values(timers).forEach(clearInterval); Object.values(snoozes).forEach(clearTimeout); } }
   );

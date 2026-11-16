@@ -2,49 +2,216 @@
   "name": "deskbuddy",
   "displayName": "DeskBuddy: Animated Reminder Buddy",
   "description": "A friendly animated character in your sidebar that reminds you to drink water, take breaks and stretch while you code.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "jaffersha",
   "license": "MIT",
   "icon": "icon.png",
-  "engines": { "vscode": "^1.80.0" },
-  "categories": ["Other"],
-  "keywords": ["water reminder", "break reminder", "pet", "buddy", "health"],
-  "repository": { "type": "git", "url": "https://github.com/JAFFERSHA/deskbuddy" },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "water reminder",
+    "break reminder",
+    "pet",
+    "buddy",
+    "health"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JAFFERSHA/deskbuddy"
+  },
   "main": "./extension.js",
-  "activationEvents": ["onStartupFinished"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "contributes": {
     "views": {
       "explorer": [
-        { "type": "webview", "id": "deskbuddy.view", "name": "DeskBuddy" }
+        {
+          "type": "webview",
+          "id": "deskbuddy.view",
+          "name": "DeskBuddy"
+        }
       ]
     },
     "commands": [
-      { "command": "deskbuddy.remindNow", "title": "DeskBuddy: Try a Reminder Now" },
-      { "command": "deskbuddy.chooseCharacter", "title": "DeskBuddy: Choose Character" },
-      { "command": "deskbuddy.chooseCharm", "title": "DeskBuddy: Choose Hanging Charm" },
-      { "command": "deskbuddy.togglePause", "title": "DeskBuddy: Pause or Resume Reminders (1 hour)" },
-      { "command": "deskbuddy.showPro", "title": "DeskBuddy: Preview Pro (Coming Soon)" }
+      {
+        "command": "deskbuddy.remindNow",
+        "title": "DeskBuddy: Try a Reminder Now",
+        "icon": "$(bell)"
+      },
+      {
+        "command": "deskbuddy.chooseCharacter",
+        "title": "DeskBuddy: Choose Character",
+        "icon": "$(account)"
+      },
+      {
+        "command": "deskbuddy.chooseCharm",
+        "title": "DeskBuddy: Choose Hanging Charm",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "deskbuddy.togglePause",
+        "title": "DeskBuddy: Pause or Resume Reminders (1 hour)"
+      },
+      {
+        "command": "deskbuddy.showPro",
+        "title": "DeskBuddy: Preview Pro (Coming Soon)"
+      },
+      {
+        "command": "deskbuddy.openSettings",
+        "title": "DeskBuddy: Open Settings",
+        "icon": "$(gear)"
+      }
     ],
     "configuration": {
       "title": "DeskBuddy",
       "properties": {
-        "deskbuddy.name": { "type": "string", "default": "friend", "description": "What your buddy calls you." },
-        "deskbuddy.character": { "type": "string", "enum": ["mika", "arjun", "zoe"], "default": "mika", "description": "Which free character to show." },
-        "deskbuddy.pet": { "type": "boolean", "default": true, "description": "Let the buddy stroll around the DeskBuddy view." },
-        "deskbuddy.charm": { "type": "string", "enum": ["none", "evileye", "lemon", "mask", "hamsa", "webby"], "enumDescriptions": ["No charm", "Evil eye", "Lemon and chilli", "Drishti mask", "Hamsa hand", "Webby the spider"], "default": "none", "description": "A good-luck charm that hangs from the top of the DeskBuddy view and swings when you touch it." },
-        "deskbuddy.snoozeMinutes": { "type": "number", "default": 10, "minimum": 1, "description": "Minutes to wait after 'Remind me later'." },
-        "deskbuddy.water.enabled": { "type": "boolean", "default": true, "description": "Water reminder." },
-        "deskbuddy.water.minutes": { "type": "number", "default": 45, "minimum": 1, "description": "Minutes between water reminders." },
-        "deskbuddy.rest.enabled": { "type": "boolean", "default": true, "description": "Break reminder." },
-        "deskbuddy.rest.minutes": { "type": "number", "default": 60, "minimum": 1, "description": "Minutes between break reminders." },
-        "deskbuddy.stretch.enabled": { "type": "boolean", "default": false, "description": "Stretch reminder." },
-        "deskbuddy.stretch.minutes": { "type": "number", "default": 90, "minimum": 1, "description": "Minutes between stretch reminders." },
-        "deskbuddy.eyes.enabled": { "type": "boolean", "default": false, "description": "Eye rest reminder." },
-        "deskbuddy.eyes.minutes": { "type": "number", "default": 20, "minimum": 1, "description": "Minutes between eye rest reminders." },
-        "deskbuddy.custom.enabled": { "type": "boolean", "default": false, "description": "Your own reminder." },
-        "deskbuddy.custom.minutes": { "type": "number", "default": 30, "minimum": 1, "description": "Minutes between custom reminders." },
-        "deskbuddy.custom.text": { "type": "string", "default": "Your own reminder goes here.", "description": "Text of the custom reminder. Use {name} for your name." }
+        "deskbuddy.name": {
+          "type": "string",
+          "default": "friend",
+          "description": "What your buddy calls you."
+        },
+        "deskbuddy.character": {
+          "type": "string",
+          "enum": [
+            "mika",
+            "arjun",
+            "zoe"
+          ],
+          "default": "mika",
+          "description": "Which free character to show."
+        },
+        "deskbuddy.pet": {
+          "type": "boolean",
+          "default": true,
+          "description": "Let the buddy stroll around the DeskBuddy view."
+        },
+        "deskbuddy.charm": {
+          "type": "string",
+          "enum": [
+            "none",
+            "evileye",
+            "lemon",
+            "mask",
+            "hamsa",
+            "webby"
+          ],
+          "enumDescriptions": [
+            "No charm",
+            "Evil eye",
+            "Lemon and chilli",
+            "Drishti mask",
+            "Hamsa hand",
+            "Webby the spider"
+          ],
+          "default": "none",
+          "description": "A good-luck charm that hangs from the top of the DeskBuddy view and swings when you touch it."
+        },
+        "deskbuddy.snoozeMinutes": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "description": "Minutes to wait after 'Remind me later'."
+        },
+        "deskbuddy.water.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Water reminder."
+        },
+        "deskbuddy.water.minutes": {
+          "type": "number",
+          "default": 45,
+          "minimum": 1,
+          "description": "Minutes between water reminders."
+        },
+        "deskbuddy.rest.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Break reminder."
+        },
+        "deskbuddy.rest.minutes": {
+          "type": "number",
+          "default": 60,
+          "minimum": 1,
+          "description": "Minutes between break reminders."
+        },
+        "deskbuddy.stretch.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Stretch reminder."
+        },
+        "deskbuddy.stretch.minutes": {
+          "type": "number",
+          "default": 90,
+          "minimum": 1,
+          "description": "Minutes between stretch reminders."
+        },
+        "deskbuddy.eyes.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Eye rest reminder."
+        },
+        "deskbuddy.eyes.minutes": {
+          "type": "number",
+          "default": 20,
+          "minimum": 1,
+          "description": "Minutes between eye rest reminders."
+        },
+        "deskbuddy.custom.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Your own reminder."
+        },
+        "deskbuddy.custom.minutes": {
+          "type": "number",
+          "default": 30,
+          "minimum": 1,
+          "description": "Minutes between custom reminders."
+        },
+        "deskbuddy.custom.text": {
+          "type": "string",
+          "default": "Your own reminder goes here.",
+          "description": "Text of the custom reminder. Use {name} for your name."
+        }
       }
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "deskbuddy.chooseCharacter",
+          "when": "view == deskbuddy.view",
+          "group": "navigation@1"
+        },
+        {
+          "command": "deskbuddy.chooseCharm",
+          "when": "view == deskbuddy.view",
+          "group": "navigation@2"
+        },
+        {
+          "command": "deskbuddy.remindNow",
+          "when": "view == deskbuddy.view",
+          "group": "navigation@3"
+        },
+        {
+          "command": "deskbuddy.openSettings",
+          "when": "view == deskbuddy.view",
+          "group": "navigation@4"
+        },
+        {
+          "command": "deskbuddy.togglePause",
+          "when": "view == deskbuddy.view",
+          "group": "more@1"
+        },
+        {
+          "command": "deskbuddy.showPro",
+          "when": "view == deskbuddy.view",
+          "group": "more@2"
+        }
+      ]
     }
   }
 }

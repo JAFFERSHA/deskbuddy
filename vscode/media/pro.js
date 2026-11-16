@@ -1,5 +1,8 @@
 (function () {
   const vscode = acquireVsCodeApi();
+  const style = document.createElement('style');
+  style.textContent = DeskBuddy.CSS;
+  document.head.appendChild(style);
   const init = JSON.parse(document.body.dataset.init || '{}');
   const box = document.getElementById('locked');
   Object.keys(DeskBuddy.CHARACTERS).filter(id => DeskBuddy.CHARACTERS[id].pro).forEach(id => {
