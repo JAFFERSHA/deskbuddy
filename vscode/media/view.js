@@ -6,7 +6,7 @@
   const mount = document.getElementById('stage');
   let stage = null, charm = null, charmKey = '', settings = { character: 'mika', pet: true, charm: 'none', effects: true }, builtFor = 0, fxLayer = null;
   const fx = () => fxLayer || (fxLayer = DeskBuddy.createFx({ mount }));
-  const FX_X = { drop: 0.3, rocket: 0.5, balloon: 0.55, peek: 0.8, confetti: 0.5 };
+  const FX_X = { drop: 0.3, rocket: 0.5, balloon: 0.55, peek: 0.8, car: 0.5, swing: 0.6, confetti: 0.5 };
 
   // The view can be any height, so the character is sized to fit it.
   function fitSize() {
@@ -52,12 +52,14 @@
   window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { build(); buildCharm(); }, 150); });
   window.addEventListener('message', e => {
     const m = e.data;
-    if (m.type === 'settings') { settings = { character: m.character, pet: m.pet, charm: m.charm || 'none', effects: m.effects !== false }; stage.setCharacter(m.character); stage.setPet(m.pet); buildCharm(); }
+    if (m.type === 'settings') { settings = { character: m.character, pet: m.pet, charm: m.charm || 'none', effects: m.effects !== false, reminderIcon: m.reminderIcon || 'mix', sound: m.sound || 'off' }; stage.setCharacter(m.character); stage.setPet(m.pet); buildCharm(); }
     if (m.type === 'remind') {
       if (charm) charm.kick(2.4);
       if (mount.clientHeight >= 210) {
-        stage.remind(m.reminder);
-        if (settings.effects && m.reminder.effect) fx().play(m.reminder.effect, { x: FX_X[m.reminder.effect] || 0.5, character: settings.character });
+        const r = DeskBuddy.plan(m.reminder, settings.reminderIcon);
+        stage.remind(r);
+        DeskBuddy.sound(settings.sound, r.ride);
+        if (settings.effects && r.effect) fx().play(r.effect, { x: FX_X[r.effect] || 0.5, character: settings.character });
         return;
       }
       // Panel too short for the bubble and buttons: wave here, and let VS Code show the question.

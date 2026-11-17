@@ -23,7 +23,7 @@
     if (!fx) fx = DeskBuddy.createFx({ mount: ensureHost(), fixed: true });
     return fx;
   }
-  const FX_X = { drop: 0.16, rocket: 0.3, balloon: 0.32, peek: 0.86, confetti: 0.5 };
+  const FX_X = { drop: 0.16, rocket: 0.3, balloon: 0.32, peek: 0.86, car: 0.5, swing: 0.6, confetti: 0.5 };
   function ensureStage() {
     if (stage) return stage;
     ensureHost();
@@ -84,9 +84,11 @@
       if (!settings) settings = DB.merge();
       hiddenHere = false;
       ensureStage().setCharacter(settings.character);
-      stage.remind(msg.reminder);
+      const r = DeskBuddy.plan(msg.reminder, settings.reminderIcon);
+      stage.remind(r);
+      DeskBuddy.sound(settings.sound, r.ride);
       if (charm) charm.kick(2.4);
-      if (settings.effects && msg.reminder.effect) ensureFx().play(msg.reminder.effect, { x: FX_X[msg.reminder.effect] || 0.5, character: settings.character });
+      if (settings.effects && r.effect) ensureFx().play(r.effect, { x: FX_X[r.effect] || 0.5, character: settings.character });
       sendResponse({ ok: true });
     }
   });

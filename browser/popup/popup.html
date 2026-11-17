@@ -25,9 +25,21 @@
 </section>
 
 <section>
+  <h2>Reminder icon</h2>
+  <div class="chars rides" id="rides"></div>
+  <p class="note">Who brings your reminders. It waits with the message until you answer, then leaves with your reply. Tap one to preview.</p>
+</section>
+
+<section>
   <h2>Hanging charm</h2>
   <div class="chars charms" id="charms"></div>
   <p class="note">Hangs from the top of pages. Drag it left, right, up or down to move it; it stays where you leave it.</p>
+</section>
+
+<section>
+  <h2>This week</h2>
+  <div class="week" id="week" aria-label="Reminders finished in the last 7 days"></div>
+  <p class="note" id="streak"></p>
 </section>
 
 <section>
@@ -64,8 +76,10 @@
     <input id="quiet-on" class="switch" type="checkbox"></label>
   <label class="row"><span><b>Daily summary</b><small>What you did today, at <input id="summary-time" type="time" aria-label="Summary time"></small></span>
     <input id="summary-on" class="switch" type="checkbox"></label>
-  <label class="row"><span><b>Animations</b><small>Water drop, rocket, balloon and confetti</small></span>
+  <label class="row"><span><b>Animations</b><small>Water drop, slow-mo rocket, car, spider swing, balloon and confetti</small></span>
     <input id="effects" class="switch" type="checkbox"></label>
+  <label class="row"><span><b>Sound</b><small>A short blip when a reminder appears</small></span>
+    <select id="sound"><option value="off">Off</option><option value="chime">Chime</option><option value="pop">Pop</option><option value="themed">Matches the icon</option></select></label>
 </section>
 
 <section class="pro">

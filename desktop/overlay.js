@@ -7,7 +7,7 @@
 
   let settings = null, stage = null, charm = null, petHidden = false, charmHidden = false;
   const fx = DeskBuddy.createFx({ mount: document.body, fixed: true });
-  const FX_X = { drop: 0.12, rocket: 0.24, balloon: 0.26, peek: 0.88, confetti: 0.5 };
+  const FX_X = { drop: 0.12, rocket: 0.24, balloon: 0.26, peek: 0.88, car: 0.5, swing: 0.6, confetti: 0.5 };
 
   function ensureStage() {
     if (stage) return stage;
@@ -43,9 +43,12 @@
   });
   host.onRemind(r => {
     if (!settings) return;
-    petHidden = false; ensureStage().remind(r);
+    petHidden = false;
+    const p = DeskBuddy.plan(r, settings.reminderIcon);
+    ensureStage().remind(p);
+    DeskBuddy.sound(settings.sound, p.ride);
     if (charm) charm.kick(2.4);
-    if (settings.effects && r.effect) fx.play(r.effect, { x: FX_X[r.effect] || 0.5, character: settings.character });
+    if (settings.effects && p.effect) fx.play(p.effect, { x: FX_X[p.effect] || 0.5, character: settings.character });
   });
 
   // The window ignores the mouse everywhere except over the buddy, its bubble and the charm.

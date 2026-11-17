@@ -73,9 +73,13 @@ Testing used so far: a Node script that drives `DBEngine.tick` with a simulated 
 
 ## Settings model (browser/defaults.js)
 
-`name, character (mika|arjun|zoe), pet, charm (none|evileye|lemon|mask|hamsa|webby), charmX (0–1), charmLen (px, -1 = default), snooze (5|10|30), pausedUntil, effects, schedules[{id,text,time "HH:MM",repeat once|daily|weekdays,warn 0|5|10|15,on}] (max 20), quiet{on,from,to}, summary{on,time}, focus{work,rest}, reminders{water,rest,stretch,eyes,custom: {on,every,text}}`.
+`name, character (mika|arjun|zoe|capy|axo|boo|boba|ducky), pet, reminderIcon (buddy|mix|car|scooter|skate|plane|balloon|ufo|cloud|rocket|webby), sound (off|chime|pop|themed), charm (none|evileye|lemon|mask|hamsa|webby|luckycat|duck|boba|pixelheart|moon|cactus|clover|disco), charmX (0–1), charmLen (px, -1 = default), snooze (5|10|30), pausedUntil, effects, schedules[{id,text,time "HH:MM",repeat once|daily|weekdays,warn 0|5|10|15,on}] (max 20), quiet{on,from,to}, summary{on,time}, focus{work,rest}, reminders{water,rest,stretch,eyes,custom: {on,every,text}}`.
 
 Browser: settings in `storage.sync.settings`; engine state, stats and waitlist in `storage.local`. Desktop: same shape in `userData/deskbuddy.json`. VS Code: real settings under `deskbuddy.*`, converted by `settings()` in `extension.js`; engine state and stats in `globalState`.
+
+## Rides (reminder icons)
+
+`DeskBuddy.plan(reminder, settings.reminderIcon)` picks a ride (or none = the buddy) and drops one-shot effects that would double up. The stage then shows the ride instead of the buddy: it arrives, waits with the bubble and buttons until answered, and leaves with the reply message (cars drive off, rocket launches slow-mo, balloon floats, plane glides). `DeskBuddy.sound(mode, ride)` plays synthesised blips. `DBEngine.weekSummary(stats, now)` feeds the popup's "This week" chart and streak. Desktop Mac builds both arm64 and x64.
 
 ## Reminder engine rules (shared/engine.js)
 

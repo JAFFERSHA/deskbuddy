@@ -14,7 +14,7 @@
   function renderChars() {
     const box = $('chars');
     box.textContent = '';
-    Object.keys(DeskBuddy.CHARACTERS).forEach(id => {
+    Object.keys(DeskBuddy.CHARACTERS).sort((a, b) => DeskBuddy.CHARACTERS[a].pro - DeskBuddy.CHARACTERS[b].pro).forEach(id => {
       const c = DeskBuddy.CHARACTERS[id];
       const b = document.createElement('button');
       b.type = 'button';
@@ -33,13 +33,37 @@
       } else {
         b.setAttribute('aria-pressed', String(settings.character === id));
         b.addEventListener('click', () => {
-          settings.character = id; save(); renderChars();
+          settings.character = id; save(); renderChars(); renderRides();
           stage.setCharacter(id); stage.poke();
         });
       }
       box.appendChild(b);
     });
     DeskBuddy.render($('logo'), settings.character);
+  }
+
+  function renderRides() {
+    const box = $('rides');
+    box.textContent = '';
+    const opts = [['buddy', 'My buddy'], ['mix', 'Surprise me']].concat(Object.keys(DeskBuddy.RIDES).map(k => [k, DeskBuddy.RIDES[k].name]));
+    opts.forEach(([id, name]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'char';
+      if (id === 'buddy') { const h = document.createElement('span'); h.className = 'ride-art'; DeskBuddy.render(h, settings.character); b.appendChild(h); }
+      else if (id === 'mix') { const x = document.createElement('span'); x.className = 'none'; x.textContent = '\u2728'; b.appendChild(x); }
+      else { const h = document.createElement('span'); h.className = 'ride-art'; DeskBuddy.renderRide(h, id); b.appendChild(h); }
+      const label = document.createElement('span');
+      label.textContent = name;
+      b.appendChild(label);
+      b.setAttribute('aria-pressed', String(settings.reminderIcon === id));
+      b.addEventListener('click', () => {
+        settings.reminderIcon = id; save(); renderRides();
+        stage.remind(DeskBuddy.plan({ id: 'preview', kind: 'preview', title: 'Preview', text: 'This is how I will bring your reminders.', timeout: 6000,
+          actions: [{ id: 'done', label: 'Got it', primary: true }, { id: 'later', label: 'Later' }] }, id === 'mix' ? (() => { const k = Object.keys(DeskBuddy.RIDES); return k[Math.floor(Math.random() * k.length)]; })() : id));
+        DeskBuddy.sound(settings.sound, id === 'buddy' ? null : id);
+      });
+      box.appendChild(b);
+    });
   }
 
   function renderCharms() {
@@ -152,17 +176,35 @@
     $('stat').textContent = n ? n + (n === 1 ? ' sip' : ' sips') + ' logged today' : 'No sips logged today';
   }
 
+  async function renderWeek() {
+    const { stats } = await api.storage.local.get('stats');
+    const w = DBEngine.weekSummary(stats, Date.now());
+    const box = $('week'); box.textContent = '';
+    const max = Math.max(1, ...w.days.map(d => d.total));
+    w.days.forEach(d => {
+      const col = document.createElement('div');
+      col.className = 'd' + (d.total ? ' has' : '') + (d.today ? ' today' : '');
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = d.total || '';
+      const bar = document.createElement('div'); bar.className = 'bar'; bar.style.height = Math.round(4 + (d.total / max) * 40) + 'px';
+      const l = document.createElement('span'); l.textContent = d.label;
+      col.append(n, bar, l); box.appendChild(col);
+    });
+    $('streak').textContent = w.streak ? w.streak + (w.streak === 1 ? ' day' : '-day') + ' streak. ' + w.total + ' reminders finished this week.' : 'Finish a reminder to start a streak.';
+  }
+
   async function init() {
     const res = await api.storage.sync.get('settings');
     settings = DB.merge(res.settings);
     stage = DeskBuddy.createStage({
       mount: $('preview'), size: 72, character: settings.character,
-      onAction: (action, r) => { if (action === 'done') setTimeout(renderStat, 400); }
+      onAction: (action, r) => { if (action === 'done') setTimeout(() => { renderStat(); renderWeek(); }, 400); }
     });
     stage.setPet(true);
     $('name').value = settings.name === 'friend' ? '' : settings.name;
     $('pet').checked = settings.pet;
-    renderChars(); renderCharms(); renderReminders(); renderPause(); renderStat(); renderSchedules(); renderFocus();
+    renderChars(); renderRides(); renderCharms(); renderReminders(); renderPause(); renderStat(); renderWeek(); renderSchedules(); renderFocus();
+    $('sound').value = settings.sound;
+    $('sound').addEventListener('change', () => { settings.sound = $('sound').value; save(); DeskBuddy.sound(settings.sound, null); });
 
     $('sched-form').addEventListener('submit', e => {
       e.preventDefault();

@@ -11,7 +11,7 @@ const REMINDERS = {
   eyes:    { title: 'Eye rest', text: 'Eye rest: look at something far away for 20 seconds.', done: 'Done', cheer: 'Your eyes say thanks!' },
   custom:  { title: 'Custom',   text: 'Your own reminder goes here.', done: 'Done', cheer: 'Great!' }
 };
-const FREE = ['mika', 'arjun', 'zoe'];
+const FREE = ['mika', 'arjun', 'zoe', 'capy', 'axo', 'boo', 'boba', 'ducky'];
 const PRO = ['Bolt', 'Mochi', 'Nova', 'Kage'];
 const TIME = /^([01]?\d|2[0-3]):[0-5]\d$/;
 
@@ -86,7 +86,7 @@ function updateStatus() {
 function pushSettings() {
   if (!view) return;
   const ch = cfg().get('character');
-  view.webview.postMessage({ type: 'settings', character: FREE.includes(ch) ? ch : 'mika', pet: !!cfg().get('pet'), charm: cfg().get('charm') || 'none', effects: cfg().get('animations') !== false });
+  view.webview.postMessage({ type: 'settings', character: FREE.includes(ch) ? ch : 'mika', pet: !!cfg().get('pet'), charm: cfg().get('charm') || 'none', effects: cfg().get('animations') !== false, reminderIcon: cfg().get('reminderIcon') || 'mix', sound: cfg().get('sound') || 'off' });
 }
 
 function page(webview, body, script, data) {

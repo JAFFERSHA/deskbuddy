@@ -4,7 +4,8 @@
   'use strict';
 
   var MIN = 60000;
-  var EFFECT = { water: 'drop', rest: 'rocket', stretch: 'balloon', eyes: 'peek' };
+  var EFFECT = { water: 'drop', rest: ['rocket', 'car'], stretch: 'balloon', eyes: ['peek', 'swing'] };
+  function pickFx(e) { return Array.isArray(e) ? e[Math.floor(Math.random() * e.length)] : e; }
 
   function dayKey(now) { var d = new Date(now); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function parseTime(t) {
@@ -39,7 +40,7 @@
     var m = meta[id], r = settings.reminders[id];
     return {
       key: id, id: id, kind: 'interval', title: m.title, text: name(settings, r.text || m.text), cheer: m.cheer,
-      snoozeText: 'Okay, snoozed.', effect: EFFECT[id] || null,
+      snoozeText: 'Okay, snoozed.', effect: pickFx(EFFECT[id]) || null,
       actions: [{ id: 'done', label: m.done, primary: true }, { id: 'later', label: snoozeLabel(settings) }, { id: 'skip', label: 'Skip today' }]
     };
   }
@@ -47,7 +48,7 @@
     var warn = minutesLeft > 0;
     return {
       key: 's:' + sc.id, id: sc.id, kind: 'sched', title: (warn ? 'In ' + minutesLeft + ' min' : 'Now') + ' · ' + clock(target),
-      text: name(settings, sc.text), cheer: 'Got it!', snoozeText: 'Okay, snoozed.', effect: warn ? null : 'rocket',
+      text: name(settings, sc.text), cheer: 'Got it!', snoozeText: 'Okay, snoozed.', effect: warn ? null : pickFx(['rocket', 'car']),
       actions: [{ id: 'done', label: 'Got it', primary: true }, { id: 'later', label: snoozeLabel(settings) }]
     };
   }
@@ -139,7 +140,16 @@
   function act(settings, state, stats, p, action, now) {
     state = fixState(state, now);
     var today = dayKey(now);
-    if (!stats || stats.day !== today) stats = { day: today, counts: {} };
+    if (!stats || stats.day !== today) {
+      var prev = stats, hist = (prev && prev.history && typeof prev.history === 'object') ? prev.history : {};
+      if (prev && prev.day && prev.counts) {
+        var sum = 0; Object.keys(prev.counts).forEach(function (k) { sum += prev.counts[k] || 0; });
+        if (sum) hist[prev.day] = sum;
+      }
+      var keys = Object.keys(hist);
+      if (keys.length > 60) keys.slice(0, keys.length - 60).forEach(function (k) { delete hist[k]; });
+      stats = { day: today, counts: {}, history: hist };
+    }
     if (action === 'done') {
       var bucket = p.kind === 'interval' ? p.id : (p.kind === 'sched' ? 'sched' : (p.kind === 'focus' && p.counts ? 'focus' : null));
       if (bucket) stats.counts[bucket] = (stats.counts[bucket] || 0) + 1;
@@ -151,6 +161,23 @@
     return { state: state, stats: stats };
   }
 
+  /* Last 7 days of finished reminders plus the current streak (days in a row with at least one). */
+  function weekSummary(stats, now) {
+    var hist = (stats && stats.history) || {}, today = dayKey(now), days = [], total = 0;
+    function dayTotal(key) {
+      if (stats && stats.day === key) { var n = 0; Object.keys(stats.counts || {}).forEach(function (k) { n += stats.counts[k] || 0; }); return n; }
+      return hist[key] || 0;
+    }
+    for (var i = 6; i >= 0; i--) {
+      var t = now - i * 86400000, d = new Date(t), n = dayTotal(dayKey(t));
+      total += n;
+      days.push({ label: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][d.getDay()], total: n, today: i === 0 });
+    }
+    var streak = 0, start = dayTotal(today) > 0 ? 0 : 1;
+    for (var j = start; j < 60; j++) { if (dayTotal(dayKey(now - j * 86400000)) > 0) streak++; else break; }
+    return { days: days, total: total, streak: streak };
+  }
+
   function setFocus(settings, state, on, now) {
     state = fixState(state, now);
     var fs = settings.focus || { work: 50, rest: 10 };
@@ -158,7 +185,7 @@
     return state;
   }
 
-  var api = { tick: tick, act: act, setFocus: setFocus, intervalPayload: intervalPayload, inQuiet: inQuiet, parseTime: parseTime, dayKey: dayKey, freshState: freshState };
+  var api = { weekSummary: weekSummary, tick: tick, act: act, setFocus: setFocus, intervalPayload: intervalPayload, inQuiet: inQuiet, parseTime: parseTime, dayKey: dayKey, freshState: freshState };
   root.DBEngine = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -25,6 +25,8 @@
     snooze: 10,
     pausedUntil: 0,
     effects: true,
+    reminderIcon: 'mix',
+    sound: 'off',
     schedules: [],
     quiet: { on: false, from: '22:00', to: '08:00' },
     summary: { on: false, time: '18:00' },
@@ -51,6 +53,8 @@
       }
     });
     if (typeof saved.effects === 'boolean') s.effects = saved.effects;
+    if (saved.reminderIcon === 'buddy' || saved.reminderIcon === 'mix' || (root.DeskBuddy && root.DeskBuddy.RIDES[saved.reminderIcon])) s.reminderIcon = saved.reminderIcon;
+    if (['off', 'chime', 'pop', 'themed'].indexOf(saved.sound) >= 0) s.sound = saved.sound;
     s.snooze = [5, 10, 30].indexOf(Number(s.snooze)) >= 0 ? Number(s.snooze) : 10;
     if (Array.isArray(saved.schedules)) {
       s.schedules = saved.schedules.filter(function (x) { return x && typeof x.text === 'string' && x.text.trim() && TIME.test(x.time); }).slice(0, 20).map(function (x, i) {
