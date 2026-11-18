@@ -8,10 +8,10 @@ A free, friendly 2D animated character that walks onto the screen and reminds th
 
 | Target | Folder | Status (17 Nov 2026) |
 | --- | --- | --- |
-| Chrome and Edge extension (Manifest V3) | `browser/` + `manifest.chrome.json` | Edge: draft in Partner Center, never published. Chrome Web Store: not listed (US$5 fee, owner chose free stores only). |
-| Firefox extension | `browser/` + `manifest.firefox.json` | Live on AMO; store has 1.1.0, 1.2.0 not uploaded yet. |
-| VS Code extension | `vscode/` | Live on the Marketplace; store has 1.0.0, 1.2.0 not uploaded yet. |
-| Desktop app (macOS, Windows, Linux) | `desktop/` (Electron) | v1.2.0 installers on GitHub Releases, built by CI. |
+| Chrome and Edge extension (Manifest V3) | `browser/` + `manifest.chrome.json` | Edge: live at 1.0.0; 1.3.0 update submitted 18 Nov 2026, in review (about 7 business days). Chrome Web Store: not listed (US$5 fee, owner chose free stores only). |
+| Firefox extension | `browser/` + `manifest.firefox.json` | Live on AMO at 1.3.0. |
+| VS Code extension | `vscode/` | Live on the Marketplace at 1.3.0; 1.3.3 (Activity Bar view, settings page, desktop overlay switch) built but not uploaded. |
+| Desktop app (macOS, Windows, Linux) | `desktop/` (Electron) | v1.3.0 installers on GitHub Releases (Mac arm64 + Intel, Windows, Linux). |
 
 Owner: JAFFERSHA, brand "Zero to Deploy", support email support@zerotodeploy.in. Licence: MIT.
 
@@ -111,7 +111,10 @@ storage (settings), alarms (the one-minute tick), notifications (fallback where 
 - No `innerHTML` anywhere (AMO linter): characters are built with `DOMParser` via `DeskBuddy.render` / `renderCharm`.
 - Firefox add-on slug max 30 chars.
 - VS Code views can be very short: `view.js` sizes the character from the panel height and, under 210 px, sends the reminder to a VS Code notification instead of the bubble.
-- VS Code extensions can't draw over the editor; the buddy and charm only live in the DeskBuddy sidebar view. Commands live in the palette (Cmd+Shift+P), plus header buttons on the view.
+- VS Code extensions can't draw over the editor; the buddy and charm only live in the DeskBuddy view (own Activity Bar icon, full sidebar height) or the big stage tab (`deskbuddy.openStage`). Patching VS Code files to overlay the window was rejected (corrupt-install warning, breaks on update, unsafe on work machines). Whole-screen = desktop app; setting `deskbuddy.desktopOverlay` launches it with VS Code and silences the sidebar reminders.
+- VS Code settings page (`deskbuddy.openSettings`) is the browser popup running in a webview with a shim `browser` API that maps to `deskbuddy.*` settings (`popupSettings` / `savePopupSettings` in `extension.js`); `build.js` copies popup, engine and defaults into `vscode/media/`. Rides are up to 2.2x the buddy's width, so `view.js` caps size by panel width as well as height.
+- Browsers don't let extensions draw on their own store/settings pages; DeskBuddy shows a system notification there (expected, not a bug).
+- Office use: extensions need no admin rights, the desktop app needs an installer and is not paid-signed, so recommend Edge + VS Code extensions first.
 - A browser extension can't draw outside its page; whole-screen needs the desktop app.
 - `build.js` uses `zip`, which Windows CI lacks; that's why `--desktop` exists.
 - Windows installers can't be built on Linux without wine; CI on `windows-latest` does it.

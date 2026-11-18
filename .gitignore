@@ -6,3 +6,7 @@ desktop/ui/
 desktop/build/
 desktop/release/
 vscode/engine.js
+vscode/engine.js
+vscode/media/engine.js
+vscode/media/defaults.js
+vscode/media/popup/

@@ -11,7 +11,9 @@
   // The view can be any height, so the character is sized to fit it.
   function fitSize() {
     const h = mount.clientHeight || 160;
-    return Math.round(Math.max(30, Math.min(84, (h - 8) * 0.6)));
+    const w = mount.clientWidth || 300;
+    // Rides are up to 2.2x the buddy's width, so cap by width too; the buddy grows when there's room.
+    return Math.round(Math.max(30, Math.min(230, (h - 8) * 0.5, (w - 24) / 2.3)));
   }
   function build() {
     if (stage && stage.isBusy()) return;
@@ -33,7 +35,7 @@
   function buildCharm() {
     const h = mount.clientHeight || 0;
     const want = settings.charm !== 'none' && h >= 150 ? settings.charm : 'none';
-    const size = Math.round(Math.max(30, Math.min(52, h * 0.2)));
+    const size = Math.round(Math.max(30, Math.min(72, h * 0.2)));
     const key = want + ':' + size;
     if (key === charmKey) return;
     charmKey = key;

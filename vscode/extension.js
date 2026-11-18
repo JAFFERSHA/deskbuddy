@@ -15,7 +15,7 @@ const FREE = ['mika', 'arjun', 'zoe', 'capy', 'axo', 'boo', 'boba', 'ducky'];
 const PRO = ['Bolt', 'Mochi', 'Nova', 'Kage'];
 const TIME = /^([01]?\d|2[0-3]):[0-5]\d$/;
 
-let ctx, view, pausedUntil = 0, status, ticker;
+let ctx, view, stagePanel, pausedUntil = 0, status, ticker;
 
 const cfg = () => vscode.workspace.getConfiguration('deskbuddy');
 const nonce = () => Array.from({ length: 32 }, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 62)]).join('');
@@ -62,7 +62,9 @@ function handle(action, p) {
 }
 
 function show(p) {
-  if (view && view.visible) { view.webview.postMessage({ type: 'remind', reminder: p }); return; }
+  if (cfg().get('desktopOverlay')) return; // the desktop app draws reminders over the whole screen instead
+  const live = [view, stagePanel].filter(v => v && v.visible);
+  if (live.length) { live.forEach(v => v.webview.postMessage({ type: 'remind', reminder: p })); return; }
   notify(p);
 }
 
@@ -84,6 +86,9 @@ function updateStatus() {
 }
 
 function pushSettings() {
+  [view, stagePanel].forEach(pushTo);
+}
+function pushTo(view) {
   if (!view) return;
   const ch = cfg().get('character');
   view.webview.postMessage({ type: 'settings', character: FREE.includes(ch) ? ch : 'mika', pet: !!cfg().get('pet'), charm: cfg().get('charm') || 'none', effects: cfg().get('animations') !== false, reminderIcon: cfg().get('reminderIcon') || 'mix', sound: cfg().get('sound') || 'off' });
@@ -109,13 +114,28 @@ class BuddyView {
       '<div id="stage"></div><button id="pro" type="button"><span class="badge">PRO</span> Your photo as a buddy, coming soon</button>',
       'view.js');
     v.webview.onDidReceiveMessage(m => {
-      if (m.type === 'ready') pushSettings();
+      if (m.type === 'ready') pushTo(v);
       else if (m.type === 'action') handle(m.action, m.p);
       else if (m.type === 'fallback' && m.p && Array.isArray(m.p.actions)) notify(m.p);
       else if (m.type === 'pro') showPro();
     });
     v.onDidDispose(() => { view = undefined; });
   }
+}
+
+function openStage() {
+  if (stagePanel) return stagePanel.reveal();
+  stagePanel = vscode.window.createWebviewPanel('deskbuddy.stage', 'DeskBuddy', vscode.ViewColumn.Beside,
+    { enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [vscode.Uri.joinPath(ctx.extensionUri, 'media')] });
+  const p = stagePanel;
+  p.webview.html = page(p.webview, '<div id="stage"></div><button id="pro" type="button"><span class="badge">PRO</span> Your photo as a buddy, coming soon</button>', 'view.js');
+  p.webview.onDidReceiveMessage(m => {
+    if (m.type === 'ready') pushTo(p);
+    else if (m.type === 'action') handle(m.action, m.p);
+    else if (m.type === 'fallback' && m.p && Array.isArray(m.p.actions)) notify(m.p);
+    else if (m.type === 'pro') showPro();
+  });
+  p.onDidDispose(() => { stagePanel = undefined; });
 }
 
 let proPanel;
@@ -151,6 +171,91 @@ function showPro() {
   proPanel.onDidDispose(() => { proPanel = undefined; });
 }
 
+/* ---- Settings page: the browser popup, running inside a VS Code panel on top of the real settings ---- */
+let settingsPanel;
+const popupSettings = () => {
+  const s = settings(), c = cfg(), pos = ctx.globalState.get('charmpos') || {};
+  const ch = c.get('character');
+  return Object.assign({}, s, {
+    character: FREE.includes(ch) ? ch : 'mika', pet: !!c.get('pet'), charm: c.get('charm') || 'none',
+    charmX: typeof pos.x === 'number' ? pos.x : 0.82, charmLen: typeof pos.length === 'number' ? pos.length : -1,
+    reminderIcon: c.get('reminderIcon') || 'mix', sound: c.get('sound') || 'off'
+  });
+};
+async function savePopupSettings(p) {
+  if (!p || typeof p !== 'object') return;
+  const c = cfg(), set = (k, v) => (JSON.stringify(c.get(k)) === JSON.stringify(v) ? null : c.update(k, v, vscode.ConfigurationTarget.Global));
+  const jobs = [
+    set('name', String(p.name || 'friend').slice(0, 40)), set('character', FREE.includes(p.character) ? p.character : 'mika'), set('pet', !!p.pet),
+    set('charm', p.charm), set('reminderIcon', p.reminderIcon), set('sound', p.sound), set('snoozeMinutes', [5, 10, 30].includes(p.snooze) ? p.snooze : 10), set('animations', p.effects !== false)
+  ];
+  Object.keys(REMINDERS).forEach(id => { const r = (p.reminders || {})[id]; if (!r) return; jobs.push(set(id + '.enabled', !!r.on), set(id + '.minutes', Math.max(1, Math.round(r.every) || 30))); if (id === 'custom' && r.text) jobs.push(set('custom.text', String(r.text).slice(0, 160))); });
+  if (p.quiet) jobs.push(set('quietHours.enabled', !!p.quiet.on), set('quietHours.from', p.quiet.from), set('quietHours.to', p.quiet.to));
+  if (p.summary) jobs.push(set('dailySummary.enabled', !!p.summary.on), set('dailySummary.time', p.summary.time));
+  if (p.focus) jobs.push(set('focus.workMinutes', p.focus.work), set('focus.breakMinutes', p.focus.rest));
+  if (Array.isArray(p.schedules)) jobs.push(set('schedules', p.schedules.filter(x => x && x.text && TIME.test(x.time)).map(x => ({ text: x.text, time: x.time, repeat: x.repeat, warn: x.warn, on: x.on !== false }))));
+  if (typeof p.charmX === 'number') await ctx.globalState.update('charmpos', { x: p.charmX, length: p.charmLen });
+  await Promise.all(jobs.filter(Boolean));
+}
+async function rpc(m) {
+  if (m.op === 'sync.get') return { settings: popupSettings() };
+  if (m.op === 'sync.set') { await savePopupSettings(m.value && m.value.settings); return {}; }
+  if (m.op === 'local.get') return { [m.key]: ctx.globalState.get(m.key) };
+  if (m.op === 'local.set') { for (const k of Object.keys(m.value || {})) await ctx.globalState.update(k, m.value[k]); return {}; }
+  if (m.op === 'message') {
+    const x = m.value || {};
+    if (x.type === 'db:test') show(Engine.intervalPayload(x.id, settings(), REMINDERS));
+    else if (x.type === 'db:focus') { await ctx.globalState.update('engine', Engine.setFocus(settings(), ctx.globalState.get('engine'), !!x.on, Date.now())); updateStatus(); }
+    return { ok: true };
+  }
+  return {};
+}
+function openSettingsPage() {
+  if (settingsPanel) return settingsPanel.reveal();
+  const root = vscode.Uri.joinPath(ctx.extensionUri, 'media');
+  settingsPanel = vscode.window.createWebviewPanel('deskbuddy.settings', 'DeskBuddy Settings', vscode.ViewColumn.Active, { enableScripts: true, localResourceRoots: [root] });
+  const w = settingsPanel.webview, n = nonce(), u = f => w.asWebviewUri(vscode.Uri.joinPath(root, ...f.split('/')));
+  const fs = require('fs');
+  let html;
+  try { html = fs.readFileSync(vscode.Uri.joinPath(root, 'popup', 'popup.html').fsPath, 'utf8'); } catch (e) { html = null; }
+  if (!html) { settingsPanel.dispose(); vscode.commands.executeCommand('workbench.action.openSettings', '@ext:jaffersha.deskbuddy'); return; }
+  const shim = `const v=acquireVsCodeApi(),P={};let i=0;const call=(op,key,value)=>new Promise(r=>{const id=++i;P[id]=r;v.postMessage({type:'rpc',id,op,key,value})});
+addEventListener('message',e=>{if(e.data&&e.data.type==='rpc'&&P[e.data.id]){P[e.data.id](e.data.result);delete P[e.data.id]}});
+window.browser={storage:{sync:{get:k=>call('sync.get',k),set:o=>call('sync.set',null,o)},local:{get:k=>call('local.get',k),set:o=>call('local.set',null,o)}},runtime:{sendMessage:m=>call('message',null,m)}};`;
+  html = html.replace('<link rel="stylesheet" href="popup.css">', `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${w.cspSource} 'unsafe-inline'; script-src 'nonce-${n}';"><link rel="stylesheet" href="${u('popup/popup.css')}"><style>body{margin:0 auto}</style>`)
+    .replace('<script src="../buddy-core.js"></script>', `<script nonce="${n}">${shim}</script><script nonce="${n}" src="${u('buddy-core.js')}"></script>`)
+    .replace('<script src="../engine.js"></script>', `<script nonce="${n}" src="${u('engine.js')}"></script>`)
+    .replace('<script src="../defaults.js"></script>', `<script nonce="${n}" src="${u('defaults.js')}"></script>`)
+    .replace('<script src="popup.js"></script>', `<script nonce="${n}" src="${u('popup/popup.js')}"></script>`);
+  w.html = html;
+  w.onDidReceiveMessage(async m => { if (m && m.type === 'rpc') { const result = await rpc(m).catch(() => ({})); w.postMessage({ type: 'rpc', id: m.id, result }); } });
+  settingsPanel.onDidDispose(() => { settingsPanel = undefined; });
+}
+
+/* ---- Outside the box: the desktop app floats over the whole screen, VS Code included ---- */
+function openDesktopApp() {
+  const cp = require('child_process'), fs = require('fs');
+  const fail = async () => {
+    const pick = await vscode.window.showInformationMessage('DeskBuddy desktop app is not installed. It puts the buddy, rides and charm over your whole screen, outside VS Code.', 'Download');
+    if (pick) vscode.env.openExternal(vscode.Uri.parse('https://github.com/JAFFERSHA/deskbuddy/releases/latest'));
+  };
+  let child;
+  try {
+    if (process.platform === 'darwin') {
+      if (!fs.existsSync('/Applications/DeskBuddy.app')) return fail();
+      child = cp.spawn('open', ['-a', 'DeskBuddy'], { detached: true, stdio: 'ignore' });
+    } else if (process.platform === 'win32') {
+      const exe = require('path').join(process.env.LOCALAPPDATA || '', 'Programs', 'DeskBuddy', 'DeskBuddy.exe');
+      if (!fs.existsSync(exe)) return fail();
+      child = cp.spawn(exe, [], { detached: true, stdio: 'ignore' });
+    } else {
+      child = cp.spawn('deskbuddy', [], { detached: true, stdio: 'ignore' });
+    }
+    child.on('error', fail); child.unref();
+    vscode.window.setStatusBarMessage('DeskBuddy: opening the desktop buddy', 4000);
+  } catch (e) { fail(); }
+}
+
 async function addTimedReminder() {
   const text = await vscode.window.showInputBox({ title: 'Timed reminder (1/4)', prompt: 'What should the buddy remind you about?', placeHolder: 'Meeting with the team', validateInput: v => v.trim() ? null : 'Type a short message' });
   if (!text) return;
@@ -179,6 +284,7 @@ function activate(context) {
   status.command = 'deskbuddy.view.focus';
   status.show();
   updateStatus();
+  if (cfg().get('desktopOverlay')) openDesktopApp();
   ticker = setInterval(() => { tick(); updateStatus(); }, 30000);
   context.subscriptions.push(
     status,
@@ -215,9 +321,12 @@ function activate(context) {
       updateStatus();
       vscode.window.setStatusBarMessage(pausedUntil ? 'DeskBuddy paused for 1 hour' : 'DeskBuddy resumed', 3000);
     }),
+    vscode.commands.registerCommand('deskbuddy.openStage', openStage),
     vscode.commands.registerCommand('deskbuddy.showPro', showPro),
-    vscode.commands.registerCommand('deskbuddy.openSettings', () => vscode.commands.executeCommand('workbench.action.openSettings', '@ext:jaffersha.deskbuddy')),
-    vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration('deskbuddy')) pushSettings(); }),
+    vscode.commands.registerCommand('deskbuddy.openSettings', openSettingsPage),
+    vscode.commands.registerCommand('deskbuddy.openNativeSettings', () => vscode.commands.executeCommand('workbench.action.openSettings', '@ext:jaffersha.deskbuddy')),
+    vscode.commands.registerCommand('deskbuddy.openDesktop', openDesktopApp),
+    vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration('deskbuddy')) pushSettings(); if (e.affectsConfiguration('deskbuddy.desktopOverlay') && cfg().get('desktopOverlay')) openDesktopApp(); }),
     { dispose: () => clearInterval(ticker) }
   );
 }

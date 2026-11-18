@@ -24,6 +24,11 @@ for (const target of ['chrome', 'firefox']) {
 
 fs.copyFileSync(core, path.join(root, 'vscode', 'media', 'buddy-core.js'));
 fs.copyFileSync(engine, path.join(root, 'vscode', 'engine.js'));
+// VS Code settings page reuses the browser popup.
+fs.mkdirSync(path.join(root, 'vscode', 'media', 'popup'), { recursive: true });
+fs.copyFileSync(engine, path.join(root, 'vscode', 'media', 'engine.js'));
+fs.copyFileSync(path.join(root, 'browser', 'defaults.js'), path.join(root, 'vscode', 'media', 'defaults.js'));
+for (const f of ['popup.html', 'popup.css', 'popup.js']) fs.copyFileSync(path.join(root, 'browser', 'popup', f), path.join(root, 'vscode', 'media', 'popup', f));
 }
 
 // Desktop app: reuses the core, the settings model and the popup as its settings window.
