@@ -290,14 +290,12 @@
       try { allowed = await browser.permissions.request({ data_collection: ['personallyIdentifyingInfo'] }); } catch (err) { allowed = false; }
     }
     const manifest = api.runtime.getManifest ? api.runtime.getManifest() : null;
-    const entry = { email: $('email').value.trim().slice(0, 200), wants: [...wants], source: isFirefox ? 'Firefox' : 'Edge/Chrome',
+    const entry = { email: $('email').value.trim().slice(0, 200), wants: [...wants], source: api.host || (isFirefox ? 'Firefox' : 'Edge/Chrome'),
       version: manifest ? manifest.version : '', ts: Date.now(), sent: false };
     btn.disabled = true; btn.textContent = 'Sending\u2026';
     if (allowed && DB.WAITLIST_KEY) {
-      // VS Code and the desktop app send it from their own side; a browser popup sends it itself.
-      let r = null;
-      try { r = await api.runtime.sendMessage({ type: 'db:waitlist', entry }); } catch (err) { r = null; }
-      entry.sent = r && r.handled ? !!r.sent : await DB.sendWaitlist(entry, globalThis.fetch && globalThis.fetch.bind(globalThis));
+      // Sent from this page in every app: Web3Forms' free plan refuses server-side (Node) requests.
+      entry.sent = await DB.sendWaitlist(entry, globalThis.fetch && globalThis.fetch.bind(globalThis));
     }
     btn.disabled = false; btn.textContent = 'Notify me';
     if (allowed && DB.WAITLIST_KEY && !entry.sent) {

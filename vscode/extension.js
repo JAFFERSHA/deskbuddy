@@ -172,11 +172,6 @@ async function rpc(m) {
   if (m.op === 'local.set') { for (const k of Object.keys(m.value || {})) await ctx.globalState.update(k, m.value[k]); return {}; }
   if (m.op === 'message') {
     const x = m.value || {};
-    if (x.type === 'db:waitlist' && x.entry && typeof x.entry.email === 'string') {
-      require('./media/defaults.js'); // globalThis.DB, copied from browser/defaults.js by the build
-      const entry = Object.assign({}, x.entry, { email: x.entry.email.slice(0, 200), source: 'VS Code', version: ctx.extension.packageJSON.version });
-      return { handled: true, sent: await globalThis.DB.sendWaitlist(entry, globalThis.fetch) };
-    }
     if (x.type === 'db:test') show(Engine.intervalPayload(x.id, settings(), REMINDERS));
     else if (x.type === 'db:focus') { await ctx.globalState.update('engine', Engine.setFocus(settings(), ctx.globalState.get('engine'), !!x.on, Date.now())); updateStatus(); }
     return { ok: true };
@@ -194,8 +189,8 @@ function openSettingsPage(focusPro) {
   if (!html) { settingsPanel.dispose(); vscode.commands.executeCommand('workbench.action.openSettings', '@ext:jaffersha.deskbuddy'); return; }
   const shim = `const v=acquireVsCodeApi(),P={};let i=0;const call=(op,key,value)=>new Promise(r=>{const id=++i;P[id]=r;v.postMessage({type:'rpc',id,op,key,value})});
 addEventListener('message',e=>{if(e.data&&e.data.type==='rpc'&&P[e.data.id]){P[e.data.id](e.data.result);delete P[e.data.id]}});
-window.browser={storage:{sync:{get:k=>call('sync.get',k),set:o=>call('sync.set',null,o)},local:{get:k=>call('local.get',k),set:o=>call('local.set',null,o)}},runtime:{sendMessage:m=>call('message',null,m)}};`;
-  html = html.replace('<link rel="stylesheet" href="popup.css">', `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${w.cspSource} 'unsafe-inline'; script-src 'nonce-${n}';"><link rel="stylesheet" href="${u('popup/popup.css')}"><style>body{margin:0 auto}</style>`)
+window.browser={host:'VS Code',storage:{sync:{get:k=>call('sync.get',k),set:o=>call('sync.set',null,o)},local:{get:k=>call('local.get',k),set:o=>call('local.set',null,o)}},runtime:{sendMessage:m=>call('message',null,m)}};`;
+  html = html.replace('<link rel="stylesheet" href="popup.css">', `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${w.cspSource} 'unsafe-inline'; script-src 'nonce-${n}'; connect-src https://api.web3forms.com;"><link rel="stylesheet" href="${u('popup/popup.css')}"><style>body{margin:0 auto}</style>`)
     .replace('<script src="../buddy-core.js"></script>', `<script nonce="${n}">${shim}</script><script nonce="${n}" src="${u('buddy-core.js')}"></script>`)
     .replace('<script src="../engine.js"></script>', `<script nonce="${n}" src="${u('engine.js')}"></script>`)
     .replace('<script src="../defaults.js"></script>', `<script nonce="${n}" src="${u('defaults.js')}"></script>`)

@@ -121,10 +121,6 @@ ipcMain.handle('store:set', (e, area, obj) => {
   persist(); apply();
 });
 ipcMain.handle('runtime:message', (e, msg) => {
-  if (msg && msg.type === 'db:waitlist' && msg.entry && typeof msg.entry.email === 'string') {
-    const entry = Object.assign({}, msg.entry, { email: msg.entry.email.slice(0, 200), source: 'Desktop ' + process.platform, version: app.getVersion() });
-    return DB.sendWaitlist(entry, globalThis.fetch).then(sent => ({ handled: true, sent }));
-  }
   if (msg && msg.type === 'db:test') fire(msg.id);
   else if (msg && msg.type === 'db:focus') { store.local.engine = DBEngine.setFocus(settings(), store.local.engine, !!msg.on, Date.now()); persist(); buildTray(); }
   return { ok: true };

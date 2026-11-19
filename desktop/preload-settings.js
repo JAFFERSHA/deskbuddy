@@ -5,6 +5,7 @@ const area = name => ({
   set: obj => ipcRenderer.invoke('store:set', name, obj)
 });
 contextBridge.exposeInMainWorld('browser', {
+  host: 'Desktop ' + process.platform,
   storage: { sync: area('sync'), local: area('local') },
   runtime: { sendMessage: msg => ipcRenderer.invoke('runtime:message', msg) }
 });
