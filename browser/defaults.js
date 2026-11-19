@@ -2,10 +2,37 @@
 (function (root) {
   'use strict';
 
-  /* Where "I'm interested" sign-ups are sent. Leave '' to keep them only on the
-     user's device. Set it to a form endpoint that accepts a JSON POST
-     ({ email, source, ts }) once you have one. */
-  var WAITLIST_ENDPOINT = '';
+  /* Pro "I'm interested" sign-ups. To get each one by email, make a free access key at
+     web3forms.com with the inbox that should receive them and paste it below.
+     Leave '' to keep sign-ups only on the user's device (nothing is sent). */
+  var WAITLIST_KEY = '';
+  var WAITLIST_URL = 'https://api.web3forms.com/submit';
+
+  var PRO_FEATURES = [
+    { id: 'photo',    icon: '\uD83D\uDCF8', name: 'Photo buddy',    text: 'A buddy that looks like you' },
+    { id: 'trending', icon: '\u2728',       name: 'New characters', text: 'Fresh buddies every month' },
+    { id: 'calendar', icon: '\uD83D\uDCC5', name: 'Calendar sync',  text: 'Meeting reminders, automatic' },
+    { id: 'moves',    icon: '\uD83C\uDFAC', name: 'More animations', text: 'Extra rides and moves' }
+  ];
+
+  /* Sends one sign-up to the owner's inbox. Resolves true only if it was delivered. */
+  function sendWaitlist(entry, fetchFn) {
+    if (!WAITLIST_KEY || typeof fetchFn !== 'function') return Promise.resolve(false);
+    var wants = PRO_FEATURES.filter(function (f) { return (entry.wants || []).indexOf(f.id) >= 0; })
+      .map(function (f) { return f.name; }).join(', ') || 'Nothing picked';
+    var body = {
+      access_key: WAITLIST_KEY,
+      subject: 'DeskBuddy Pro: new interest from ' + entry.email,
+      from_name: 'DeskBuddy',
+      email: entry.email,
+      wants: wants,
+      app: (entry.source || '?') + (entry.version ? ' ' + entry.version : ''),
+      date: new Date(entry.ts || Date.now()).toISOString()
+    };
+    return fetchFn(WAITLIST_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.ok ? r.json().then(function (j) { return !!(j && j.success); }, function () { return true; }) : false; })
+      .catch(function () { return false; });
+  }
 
   var REMINDERS = {
     water:   { title: 'Water',    every: 45, on: true,  text: 'Hey {name}, did you drink water?', done: 'Yes!',  cheer: 'Hydrated. Nice one!' },
@@ -91,5 +118,5 @@
     return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
   }
 
-  root.DB = { WAITLIST_ENDPOINT: WAITLIST_ENDPOINT, REMINDERS: REMINDERS, DEFAULTS: DEFAULTS, merge: merge, reminderPayload: reminderPayload, today: today };
+  root.DB = { WAITLIST_KEY: WAITLIST_KEY, PRO_FEATURES: PRO_FEATURES, sendWaitlist: sendWaitlist, REMINDERS: REMINDERS, DEFAULTS: DEFAULTS, merge: merge, reminderPayload: reminderPayload, today: today };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

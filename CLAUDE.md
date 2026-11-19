@@ -104,7 +104,7 @@ Effect per reminder: water→drop, rest→rocket, stretch→balloon, eyes→peek
 
 ## Permissions, as justified to stores
 
-storage (settings), alarms (the one-minute tick), notifications (fallback where the character can't be drawn), content script on all URLs (draws the character only, in a closed shadow root; never reads page content). No remote code, no data collection. The Pro waitlist only stores the email locally unless `WAITLIST_ENDPOINT` (in `browser/defaults.js` and `vscode/extension.js`) is set; if it ever is, update Firefox `data_collection_permissions` and add a privacy policy everywhere.
+storage (settings), alarms (the one-minute tick), notifications (fallback where the character can't be drawn), content script on all URLs (draws the character only, in a closed shadow root; never reads page content). No remote code. Pro waitlist: the Pro box in the popup (also the VS Code settings page and desktop settings window; `deskbuddy.showPro` opens it) lets users tap the features they want and enter an email. If `WAITLIST_KEY` in `browser/defaults.js` holds a Web3Forms access key, `DB.sendWaitlist` emails each sign-up to the owner (VS Code and desktop send it from the host via the `db:waitlist` message); if it is '', the email stays on the device only. Firefox declares `personallyIdentifyingInfo` as an optional data collection permission and asks at submit. When the key is set, update the Edge and Chrome privacy answers ("collects personally identifiable info: email") before publishing.
 
 ## Things that bit us (don't repeat)
 

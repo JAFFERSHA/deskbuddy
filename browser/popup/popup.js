@@ -29,7 +29,7 @@
         lock.textContent = 'PRO';
         b.appendChild(lock);
         b.setAttribute('aria-label', c.name + ' (Pro, coming soon)');
-        b.addEventListener('click', () => $('interest').scrollIntoView({ behavior: 'smooth', block: 'center' }));
+        b.addEventListener('click', () => $('pro').scrollIntoView({ behavior: 'smooth', block: 'center' }));
       } else {
         b.setAttribute('aria-pressed', String(settings.character === id));
         b.addEventListener('click', () => {
@@ -242,26 +242,79 @@
       save(); renderPause();
     });
 
-    const wl = await api.storage.local.get('waitlist');
-    if (wl.waitlist) showJoined();
-    $('interest').addEventListener('click', () => { $('interest').hidden = true; $('waitlist').hidden = false; $('email').focus(); });
-    $('waitlist').addEventListener('submit', async e => {
-      e.preventDefault();
-      const entry = { email: $('email').value.trim(), source: 'browser', ts: Date.now(), sent: false };
-      if (DB.WAITLIST_ENDPOINT) {
-        try {
-          const r = await fetch(DB.WAITLIST_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
-          entry.sent = r.ok;
-        } catch (err) { entry.sent = false; }
-      }
-      await api.storage.local.set({ waitlist: entry });
-      showJoined();
-    });
+    renderPro((await api.storage.local.get('waitlist')).waitlist);
+    // VS Code's "Preview Pro" command opens this page at the Pro box.
+    const showPro = () => $('pro').scrollIntoView({ block: 'start' });
+    if (document.body.dataset.focus === 'pro') showPro();
+    addEventListener('message', e => { if (e.data && e.data.type === 'db:show-pro') showPro(); });
   }
-  function showJoined() {
-    $('interest').hidden = true; $('waitlist').hidden = true;
-    $('waitmsg').hidden = false;
-    $('waitmsg').textContent = 'Thanks! Your interest in Pro is saved.';
+
+  /* ---- Pro preview: locked characters, "what would you use" picks, email sign-up ---- */
+  const wants = new Set();
+  function renderPro(joined) {
+    const chars = $('prochars');
+    chars.textContent = '';
+    Object.keys(DeskBuddy.CHARACTERS).filter(id => DeskBuddy.CHARACTERS[id].pro).forEach(id => {
+      const d = document.createElement('div');
+      DeskBuddy.render(d, id);
+      const n = document.createElement('span');
+      n.textContent = DeskBuddy.CHARACTERS[id].name;
+      d.appendChild(n);
+      chars.appendChild(d);
+    });
+    const box = $('wants');
+    box.textContent = '';
+    DB.PRO_FEATURES.forEach(f => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      const i = document.createElement('span'); i.className = 'ic'; i.textContent = f.icon;
+      const t = document.createElement('b'); t.textContent = f.name;
+      const m = document.createElement('small'); m.textContent = f.text;
+      b.append(i, t, m);
+      const sync = () => b.setAttribute('aria-pressed', String(wants.has(f.id)));
+      sync();
+      b.addEventListener('click', () => { wants.has(f.id) ? wants.delete(f.id) : wants.add(f.id); sync(); });
+      box.appendChild(b);
+    });
+    if (joined) { (joined.wants || []).forEach(w => wants.add(w)); showJoined(joined); }
+    $('waitlist').addEventListener('submit', join);
+  }
+
+  async function join(e) {
+    e.preventDefault();
+    const btn = $('waitlist').querySelector('button');
+    const isFirefox = !!(globalThis.browser && browser.runtime && browser.runtime.getBrowserInfo);
+    // Firefox asks the user before an add-on may send personal data; must run straight from the click.
+    let allowed = true;
+    if (DB.WAITLIST_KEY && isFirefox && browser.permissions) {
+      try { allowed = await browser.permissions.request({ data_collection: ['personallyIdentifyingInfo'] }); } catch (err) { allowed = false; }
+    }
+    const manifest = api.runtime.getManifest ? api.runtime.getManifest() : null;
+    const entry = { email: $('email').value.trim().slice(0, 200), wants: [...wants], source: isFirefox ? 'Firefox' : 'Edge/Chrome',
+      version: manifest ? manifest.version : '', ts: Date.now(), sent: false };
+    btn.disabled = true; btn.textContent = 'Sending\u2026';
+    if (allowed && DB.WAITLIST_KEY) {
+      // VS Code and the desktop app send it from their own side; a browser popup sends it itself.
+      let r = null;
+      try { r = await api.runtime.sendMessage({ type: 'db:waitlist', entry }); } catch (err) { r = null; }
+      entry.sent = r && r.handled ? !!r.sent : await DB.sendWaitlist(entry, globalThis.fetch && globalThis.fetch.bind(globalThis));
+    }
+    btn.disabled = false; btn.textContent = 'Notify me';
+    if (allowed && DB.WAITLIST_KEY && !entry.sent) {
+      $('waitmsg').hidden = false;
+      $('waitmsg').textContent = 'Could not send right now. Check your connection and try again.';
+      return;
+    }
+    await api.storage.local.set({ waitlist: entry });
+    showJoined(entry);
+  }
+
+  function showJoined(entry) {
+    $('waitlist').hidden = true; $('waitmsg').hidden = true; $('joined').hidden = false;
+    $('wants').querySelectorAll('button').forEach(b => { b.disabled = true; });
+    $('joinedtext').textContent = entry.sent
+      ? 'We will email ' + entry.email + ' when Pro is ready.'
+      : 'Your interest in Pro is saved (' + entry.email + ').';
   }
   init();
 })();

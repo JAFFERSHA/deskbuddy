@@ -1,8 +1,6 @@
 const vscode = require('vscode');
 const Engine = require('./engine.js'); // shared reminder logic, copied from shared/engine.js by the build
 
-/* Where Pro waitlist sign-ups are sent. Leave '' to keep them only on the user's machine. */
-const WAITLIST_ENDPOINT = '';
 
 const REMINDERS = {
   water:   { title: 'Water',    text: 'Hey {name}, did you drink water?', done: 'Yes!', cheer: 'Hydrated. Nice one!' },
@@ -138,38 +136,8 @@ function openStage() {
   p.onDidDispose(() => { stagePanel = undefined; });
 }
 
-let proPanel;
-function showPro() {
-  if (proPanel) return proPanel.reveal();
-  proPanel = vscode.window.createWebviewPanel('deskbuddy.pro', 'DeskBuddy Pro', vscode.ViewColumn.Active,
-    { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(ctx.extensionUri, 'media')] });
-  proPanel.webview.html = page(proPanel.webview, `
-<main class="pro">
-  <p><span class="badge">PRO</span> Coming soon</p>
-  <h1>Make your buddy look like you</h1>
-  <ul>
-    <li><b>Your photo as your buddy</b><small>Upload a picture and get a character that looks like you</small></li>
-    <li><b>Trending characters</b><small>New buddies added regularly</small></li>
-    <li><b>Calendar sync</b><small>Meeting reminders straight from your calendar</small></li>
-  </ul>
-  <div id="locked" class="chars"></div>
-  <form id="waitlist"><input id="email" type="email" required placeholder="you@example.com"><button type="submit">I'm interested</button></form>
-  <p id="msg" class="note">No payment needed now. Everything in the free version stays free.</p>
-</main>`, 'pro.js', { joined: !!ctx.globalState.get('waitlist') });
-  proPanel.webview.onDidReceiveMessage(async m => {
-    if (m.type !== 'waitlist' || typeof m.email !== 'string') return;
-    const entry = { email: m.email.slice(0, 200), source: 'vscode', ts: Date.now(), sent: false };
-    if (WAITLIST_ENDPOINT && typeof fetch === 'function') {
-      try {
-        const r = await fetch(WAITLIST_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
-        entry.sent = r.ok;
-      } catch (e) { entry.sent = false; }
-    }
-    await ctx.globalState.update('waitlist', entry);
-    proPanel.webview.postMessage({ type: 'joined' });
-  });
-  proPanel.onDidDispose(() => { proPanel = undefined; });
-}
+/* Pro preview lives in the settings page (same box as the browser popup). */
+function showPro() { openSettingsPage(true); }
 
 /* ---- Settings page: the browser popup, running inside a VS Code panel on top of the real settings ---- */
 let settingsPanel;
@@ -204,14 +172,19 @@ async function rpc(m) {
   if (m.op === 'local.set') { for (const k of Object.keys(m.value || {})) await ctx.globalState.update(k, m.value[k]); return {}; }
   if (m.op === 'message') {
     const x = m.value || {};
+    if (x.type === 'db:waitlist' && x.entry && typeof x.entry.email === 'string') {
+      require('./media/defaults.js'); // globalThis.DB, copied from browser/defaults.js by the build
+      const entry = Object.assign({}, x.entry, { email: x.entry.email.slice(0, 200), source: 'VS Code', version: ctx.extension.packageJSON.version });
+      return { handled: true, sent: await globalThis.DB.sendWaitlist(entry, globalThis.fetch) };
+    }
     if (x.type === 'db:test') show(Engine.intervalPayload(x.id, settings(), REMINDERS));
     else if (x.type === 'db:focus') { await ctx.globalState.update('engine', Engine.setFocus(settings(), ctx.globalState.get('engine'), !!x.on, Date.now())); updateStatus(); }
     return { ok: true };
   }
   return {};
 }
-function openSettingsPage() {
-  if (settingsPanel) return settingsPanel.reveal();
+function openSettingsPage(focusPro) {
+  if (settingsPanel) { settingsPanel.reveal(); if (focusPro === true) settingsPanel.webview.postMessage({ type: 'db:show-pro' }); return; }
   const root = vscode.Uri.joinPath(ctx.extensionUri, 'media');
   settingsPanel = vscode.window.createWebviewPanel('deskbuddy.settings', 'DeskBuddy Settings', vscode.ViewColumn.Active, { enableScripts: true, localResourceRoots: [root] });
   const w = settingsPanel.webview, n = nonce(), u = f => w.asWebviewUri(vscode.Uri.joinPath(root, ...f.split('/')));
@@ -227,6 +200,7 @@ window.browser={storage:{sync:{get:k=>call('sync.get',k),set:o=>call('sync.set',
     .replace('<script src="../engine.js"></script>', `<script nonce="${n}" src="${u('engine.js')}"></script>`)
     .replace('<script src="../defaults.js"></script>', `<script nonce="${n}" src="${u('defaults.js')}"></script>`)
     .replace('<script src="popup.js"></script>', `<script nonce="${n}" src="${u('popup/popup.js')}"></script>`);
+  if (focusPro === true) html = html.replace('<body>', '<body data-focus="pro">');
   w.html = html;
   w.onDidReceiveMessage(async m => { if (m && m.type === 'rpc') { const result = await rpc(m).catch(() => ({})); w.postMessage({ type: 'rpc', id: m.id, result }); } });
   settingsPanel.onDidDispose(() => { settingsPanel = undefined; });

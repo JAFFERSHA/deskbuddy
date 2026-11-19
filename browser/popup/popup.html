@@ -82,20 +82,19 @@
     <select id="sound"><option value="off">Off</option><option value="chime">Chime</option><option value="pop">Pop</option><option value="themed">Matches the icon</option></select></label>
 </section>
 
-<section class="pro">
-  <div class="pro-head"><span class="badge">PRO</span><h2>Coming soon</h2></div>
-  <ul>
-    <li><b>Your photo as your buddy</b><small>Upload a picture and get a character that looks like you</small></li>
-    <li><b>Trending characters</b><small>New buddies added regularly</small></li>
-    <li><b>More on the way</b><small>Extra animations and reminder styles</small></li>
-  </ul>
-  <button id="interest" class="cta" type="button">I'm interested</button>
-  <form id="waitlist" hidden>
-    <input id="email" type="email" required placeholder="you@example.com" autocomplete="email">
-    <button class="cta" type="submit">Join waitlist</button>
+<section class="pro" id="pro">
+  <div class="pro-head"><span class="badge">PRO</span><span class="soon">Coming soon</span></div>
+  <p class="pro-title">Make DeskBuddy truly yours</p>
+  <div class="pro-chars" id="prochars"></div>
+  <p class="pro-ask">What would you use? <small>Tap any you like</small></p>
+  <div class="wants" id="wants"></div>
+  <form id="waitlist" class="join">
+    <input id="email" type="email" required maxlength="200" placeholder="you@example.com" autocomplete="email" aria-label="Your email">
+    <button class="cta" type="submit">Notify me</button>
   </form>
-  <p id="waitmsg" class="note" hidden></p>
-  <p class="note">No payment needed now. Everything above this box is free.</p>
+  <div id="joined" class="joined" hidden><span class="tick" aria-hidden="true">✓</span><div><b>You're on the list!</b><small id="joinedtext"></small></div></div>
+  <p id="waitmsg" class="note warn" role="status" hidden></p>
+  <p class="note">One email when Pro launches. No spam, nothing to pay. Everything else stays free.</p>
 </section>
 
 <script src="../buddy-core.js"></script>
