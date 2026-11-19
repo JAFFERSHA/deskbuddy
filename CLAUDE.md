@@ -32,7 +32,7 @@ shared/buddy-core.js   Characters (SVG built in code), stage (walk/wave/drink/ch
                        confetti). Exposes globalThis.DeskBuddy. Single source used by every target.
 shared/engine.js       Reminder logic: what is due and when. Pure functions, no DOM. Exposes
                        globalThis.DBEngine and module.exports. tick(), act(), setFocus(), intervalPayload().
-browser/defaults.js    Settings model (DB.DEFAULTS, DB.merge validation, DB.REMINDERS, WAITLIST_ENDPOINT).
+browser/defaults.js    Settings model (DB.DEFAULTS, DB.merge validation, DB.REMINDERS, DB.PRO_FEATURES, WAITLIST_KEY + DB.sendWaitlist).
 browser/background.js  Service worker (Chrome) / background script (Firefox). One alarm "tick" every
                        minute runs DBEngine.tick and sends the payload to the active tab; falls back to a
                        system notification where content scripts can't run.
@@ -40,7 +40,6 @@ browser/content.js     Draws the buddy, charm and effects in a CLOSED shadow roo
 browser/popup/         Settings UI. Also reused as the desktop app's settings window (see below).
 vscode/extension.js    Maps VS Code settings onto the engine's settings shape; status bar; commands.
 vscode/media/view.js   Sidebar webview (DeskBuddy view in Explorer). Sizes the character to the panel.
-vscode/media/pro.js    Pro preview panel with waitlist form.
 desktop/main.js        Electron main: transparent, always-on-top, click-through overlay over the work area;
                        tray / menu bar menu; settings window; engine tick every 20 s; JSON store in userData.
 desktop/overlay.*      Overlay renderer. Makes only the buddy, bubble, charm and balloon clickable.
@@ -104,7 +103,7 @@ Effect per reminder: water→drop, rest→rocket, stretch→balloon, eyes→peek
 
 ## Permissions, as justified to stores
 
-storage (settings), alarms (the one-minute tick), notifications (fallback where the character can't be drawn), content script on all URLs (draws the character only, in a closed shadow root; never reads page content). No remote code. Pro waitlist: the Pro box in the popup (also the VS Code settings page and desktop settings window; `deskbuddy.showPro` opens it) lets users tap the features they want and enter an email. If `WAITLIST_KEY` in `browser/defaults.js` holds a Web3Forms access key, `DB.sendWaitlist` emails each sign-up to the owner (VS Code and desktop send it from the host via the `db:waitlist` message); if it is '', the email stays on the device only. Firefox declares `personallyIdentifyingInfo` as an optional data collection permission and asks at submit. When the key is set, update the Edge and Chrome privacy answers ("collects personally identifiable info: email") before publishing.
+storage (settings), alarms (the one-minute tick), notifications (fallback where the character can't be drawn), content script on all URLs (draws the character only, in a closed shadow root; never reads page content). No remote code. Pro waitlist: the Pro box in the popup (also the VS Code settings page and desktop settings window; `deskbuddy.showPro` opens it) lets users tap the features they want and enter an email. `WAITLIST_KEY` in `browser/defaults.js` holds the owner's Web3Forms access key (set 19 Nov 2026; public by design, it can only send to the owner's inbox), so `DB.sendWaitlist` emails each sign-up to the owner (VS Code and desktop send it from the host via the `db:waitlist` message); if it is '', the email stays on the device only. Firefox declares `personallyIdentifyingInfo` as an optional data collection permission and asks at submit. When the key is set, update the Edge and Chrome privacy answers ("collects personally identifiable info: email") before publishing.
 
 ## Things that bit us (don't repeat)
 

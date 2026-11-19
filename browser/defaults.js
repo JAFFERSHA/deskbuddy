@@ -5,7 +5,7 @@
   /* Pro "I'm interested" sign-ups. To get each one by email, make a free access key at
      web3forms.com with the inbox that should receive them and paste it below.
      Leave '' to keep sign-ups only on the user's device (nothing is sent). */
-  var WAITLIST_KEY = '';
+  var WAITLIST_KEY = '6fe36b37-ce04-4d99-956a-c4fee564b268';
   var WAITLIST_URL = 'https://api.web3forms.com/submit';
 
   var PRO_FEATURES = [
