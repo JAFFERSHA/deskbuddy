@@ -2,7 +2,7 @@
   "name": "deskbuddy",
   "displayName": "DeskBuddy: Animated Reminder Buddy",
   "description": "A friendly animated character in your sidebar that reminds you to drink water, take breaks and stretch while you code.",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "publisher": "jaffersha",
   "license": "MIT",
   "icon": "icon.png",

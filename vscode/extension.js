@@ -1,8 +1,6 @@
 const vscode = require('vscode');
 const Engine = require('./engine.js'); // shared reminder logic, copied from shared/engine.js by the build
 
-/* Where Pro waitlist sign-ups are sent. Leave '' to keep them only on the user's machine. */
-const WAITLIST_ENDPOINT = '';
 
 const REMINDERS = {
   water:   { title: 'Water',    text: 'Hey {name}, did you drink water?', done: 'Yes!', cheer: 'Hydrated. Nice one!' },
@@ -138,38 +136,8 @@ function openStage() {
   p.onDidDispose(() => { stagePanel = undefined; });
 }
 
-let proPanel;
-function showPro() {
-  if (proPanel) return proPanel.reveal();
-  proPanel = vscode.window.createWebviewPanel('deskbuddy.pro', 'DeskBuddy Pro', vscode.ViewColumn.Active,
-    { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(ctx.extensionUri, 'media')] });
-  proPanel.webview.html = page(proPanel.webview, `
-<main class="pro">
-  <p><span class="badge">PRO</span> Coming soon</p>
-  <h1>Make your buddy look like you</h1>
-  <ul>
-    <li><b>Your photo as your buddy</b><small>Upload a picture and get a character that looks like you</small></li>
-    <li><b>Trending characters</b><small>New buddies added regularly</small></li>
-    <li><b>Calendar sync</b><small>Meeting reminders straight from your calendar</small></li>
-  </ul>
-  <div id="locked" class="chars"></div>
-  <form id="waitlist"><input id="email" type="email" required placeholder="you@example.com"><button type="submit">I'm interested</button></form>
-  <p id="msg" class="note">No payment needed now. Everything in the free version stays free.</p>
-</main>`, 'pro.js', { joined: !!ctx.globalState.get('waitlist') });
-  proPanel.webview.onDidReceiveMessage(async m => {
-    if (m.type !== 'waitlist' || typeof m.email !== 'string') return;
-    const entry = { email: m.email.slice(0, 200), source: 'vscode', ts: Date.now(), sent: false };
-    if (WAITLIST_ENDPOINT && typeof fetch === 'function') {
-      try {
-        const r = await fetch(WAITLIST_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
-        entry.sent = r.ok;
-      } catch (e) { entry.sent = false; }
-    }
-    await ctx.globalState.update('waitlist', entry);
-    proPanel.webview.postMessage({ type: 'joined' });
-  });
-  proPanel.onDidDispose(() => { proPanel = undefined; });
-}
+/* Pro preview lives in the settings page (same box as the browser popup). */
+function showPro() { openSettingsPage(true); }
 
 /* ---- Settings page: the browser popup, running inside a VS Code panel on top of the real settings ---- */
 let settingsPanel;
@@ -210,8 +178,8 @@ async function rpc(m) {
   }
   return {};
 }
-function openSettingsPage() {
-  if (settingsPanel) return settingsPanel.reveal();
+function openSettingsPage(focusPro) {
+  if (settingsPanel) { settingsPanel.reveal(); if (focusPro === true) settingsPanel.webview.postMessage({ type: 'db:show-pro' }); return; }
   const root = vscode.Uri.joinPath(ctx.extensionUri, 'media');
   settingsPanel = vscode.window.createWebviewPanel('deskbuddy.settings', 'DeskBuddy Settings', vscode.ViewColumn.Active, { enableScripts: true, localResourceRoots: [root] });
   const w = settingsPanel.webview, n = nonce(), u = f => w.asWebviewUri(vscode.Uri.joinPath(root, ...f.split('/')));
@@ -221,12 +189,13 @@ function openSettingsPage() {
   if (!html) { settingsPanel.dispose(); vscode.commands.executeCommand('workbench.action.openSettings', '@ext:jaffersha.deskbuddy'); return; }
   const shim = `const v=acquireVsCodeApi(),P={};let i=0;const call=(op,key,value)=>new Promise(r=>{const id=++i;P[id]=r;v.postMessage({type:'rpc',id,op,key,value})});
 addEventListener('message',e=>{if(e.data&&e.data.type==='rpc'&&P[e.data.id]){P[e.data.id](e.data.result);delete P[e.data.id]}});
-window.browser={storage:{sync:{get:k=>call('sync.get',k),set:o=>call('sync.set',null,o)},local:{get:k=>call('local.get',k),set:o=>call('local.set',null,o)}},runtime:{sendMessage:m=>call('message',null,m)}};`;
-  html = html.replace('<link rel="stylesheet" href="popup.css">', `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${w.cspSource} 'unsafe-inline'; script-src 'nonce-${n}';"><link rel="stylesheet" href="${u('popup/popup.css')}"><style>body{margin:0 auto}</style>`)
+window.browser={host:'VS Code',storage:{sync:{get:k=>call('sync.get',k),set:o=>call('sync.set',null,o)},local:{get:k=>call('local.get',k),set:o=>call('local.set',null,o)}},runtime:{sendMessage:m=>call('message',null,m)}};`;
+  html = html.replace('<link rel="stylesheet" href="popup.css">', `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${w.cspSource} 'unsafe-inline'; script-src 'nonce-${n}'; connect-src https://api.web3forms.com;"><link rel="stylesheet" href="${u('popup/popup.css')}"><style>body{margin:0 auto}</style>`)
     .replace('<script src="../buddy-core.js"></script>', `<script nonce="${n}">${shim}</script><script nonce="${n}" src="${u('buddy-core.js')}"></script>`)
     .replace('<script src="../engine.js"></script>', `<script nonce="${n}" src="${u('engine.js')}"></script>`)
     .replace('<script src="../defaults.js"></script>', `<script nonce="${n}" src="${u('defaults.js')}"></script>`)
     .replace('<script src="popup.js"></script>', `<script nonce="${n}" src="${u('popup/popup.js')}"></script>`);
+  if (focusPro === true) html = html.replace('<body>', '<body data-focus="pro">');
   w.html = html;
   w.onDidReceiveMessage(async m => { if (m && m.type === 'rpc') { const result = await rpc(m).catch(() => ({})); w.postMessage({ type: 'rpc', id: m.id, result }); } });
   settingsPanel.onDidDispose(() => { settingsPanel = undefined; });
