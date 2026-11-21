@@ -42,6 +42,22 @@ for (const f of ['popup.html', 'popup.css', 'popup.js']) fs.copyFileSync(path.jo
 fs.mkdirSync(path.join(root, 'desktop', 'build'), { recursive: true });
 fs.copyFileSync(path.join(root, 'desktop', 'icon-source.png'), path.join(root, 'desktop', 'build', 'icon.png'));
 
+// Web app (PWA for iPad / any browser): served by GitHub Pages from docs/app.
+if (!desktopOnly) {
+  const app = path.join(root, 'docs', 'app');
+  fs.rmSync(app, { recursive: true, force: true });
+  fs.mkdirSync(path.join(app, 'settings'), { recursive: true });
+  fs.cpSync(path.join(root, 'pwa'), app, { recursive: true });
+  fs.copyFileSync(core, path.join(app, 'buddy-core.js'));
+  fs.copyFileSync(engine, path.join(app, 'engine.js'));
+  fs.copyFileSync(path.join(root, 'browser', 'defaults.js'), path.join(app, 'defaults.js'));
+  fs.copyFileSync(path.join(root, 'browser', 'popup', 'popup.css'), path.join(app, 'settings', 'popup.css'));
+  fs.copyFileSync(path.join(root, 'browser', 'popup', 'popup.js'), path.join(app, 'settings', 'popup.js'));
+  // Settings page: same as the browser popup, but loads the storage shim and files from the app root.
+  fs.writeFileSync(path.join(app, 'settings', 'popup.html'), fs.readFileSync(path.join(root, 'browser', 'popup', 'popup.html'), 'utf8')
+    .replace('<script src="../buddy-core.js"></script>', '<script src="../settings-shim.js"></script>\n<script src="../buddy-core.js"></script>'));
+}
+
 if (!desktopOnly) {
 const demo = fs.readFileSync(path.join(root, 'demo', 'demo.src.html'), 'utf8')
   .replace('/*__CORE__*/', () => fs.readFileSync(core, 'utf8'));

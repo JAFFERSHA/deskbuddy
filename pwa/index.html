@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DeskBuddy</title>
+<meta name="theme-color" content="#14161d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DeskBuddy">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#14161d;color:#eef0f5;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{position:fixed;top:env(safe-area-inset-top);left:0;right:0;display:flex;align-items:center;gap:10px;padding:12px 16px;z-index:5}
+header img{width:36px;height:36px;border-radius:10px}
+header h1{font-size:18px;margin:0}
+header small{display:block;color:#a7aebf;font-size:13px}
+header .sp{flex:1}
+button{font:inherit;color:#eef0f5;background:#232733;border:1px solid #2c303c;border-radius:12px;padding:10px 14px;min-height:44px}
+button.cta{background:#2f6bff;border-color:#2f6bff;font-weight:700}
+.panel{position:fixed;left:50%;top:76px;transform:translateX(-50%);width:min(560px,calc(100% - 32px));max-height:calc(100% - 200px);overflow:auto;background:#1d2029;border:1px solid #2c303c;border-radius:16px;padding:16px;z-index:4}
+.panel h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:#a7aebf;margin:0 0 10px}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.note{color:#a7aebf;font-size:14px;margin:10px 0 0}
+#ios{display:none}
+#settings{position:fixed;inset:0;background:#14161d;z-index:10;display:none;flex-direction:column;padding-top:env(safe-area-inset-top)}
+#settings.on{display:flex}
+#settings .bar{display:flex;justify-content:flex-end;padding:8px 12px}
+#settings iframe{flex:1;border:0;width:100%;max-width:520px;margin:0 auto;background:#14161d}
+</style>
+</head>
+<body>
+<header>
+  <img src="icon-192.png" alt="">
+  <div><h1>DeskBuddy</h1><small id="stat">No sips logged today</small></div>
+  <span class="sp"></span>
+  <button id="btn-panel" type="button">Try</button>
+  <button id="btn-settings" class="cta" type="button">Settings</button>
+</header>
+
+<div class="panel" id="panel" hidden>
+  <h2>Try a reminder</h2>
+  <div class="row" id="try"></div>
+  <h2 style="margin-top:16px">Notifications</h2>
+  <div class="row"><button id="btn-notif" type="button">Turn on notifications</button></div>
+  <p class="note" id="notif-note">DeskBuddy keeps the buddy on this screen. Notifications nudge you when the app is in the background (iPad: install it to the Home Screen first).</p>
+  <p class="note" id="ios">To install on iPad: tap the Share button in Safari, then <b>Add to Home Screen</b>.</p>
+  <p class="note">Keep DeskBuddy open (for example in Split View) so reminders run on time. Everything stays on this device.</p>
+</div>
+
+<div id="settings">
+  <div class="bar"><button id="btn-close" type="button">Done</button></div>
+  <iframe id="frame" title="Settings"></iframe>
+</div>
+
+<script src="buddy-core.js"></script>
+<script src="engine.js"></script>
+<script src="defaults.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
